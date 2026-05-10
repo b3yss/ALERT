@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Алерт — Браузерная 2D игра</title>
+    <title>ALERT — Браузерная 2D игра</title>
     <style>
         :root { --bg: #0a0a0a; --text: #c7c7c7; --accent: #b30000; --accent2: #ff1a1a; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -44,6 +44,28 @@
             if (score < 40000) return { name: 'Хитман', level: 1 };
             if (score < 100000) return { name: 'Киллер', level: 2 };
             return { name: 'АБСОЛЬТНЫЙ МОНСТР', level: 3 };
+        }
+
+        // Рекламная панель (анимация)
+        let adState = null; // { type: 'up'/'down', timer: 0, image: Image, x: 0, y: 0, alpha: 0 }
+        let lastMadnessLevel = 0;
+
+        // Загружаем картинки заранее
+        const adImageUp = new Image();
+        adImageUp.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOTLcskIJU1IbFHPE7zHU24h580TrHyVXqFQ&s';
+        const adImageDown = new Image();
+        adImageDown.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSB3n8ffMEh5KzKRvDsfsdFiHGoPD_xaS1Ylg&s';
+
+        function triggerAd(type) {
+            adState = {
+                type: type,
+                timer: 0,
+                image: type === 'up' ? adImageUp : adImageDown,
+                x: -400, // начнём за левым краем
+                y: VIRTUAL_HEIGHT - 200,
+                alpha: 0,
+                duration: 6 // секунд
+            };
         }
 
         // Звук
@@ -442,14 +464,14 @@
             waveNumber=1; waveEnemiesRemaining=0; wavePauseTimer=0; waveActive=false; gameOverScore=0;
             corridorProgress=0; corridorTextTimer=0; corridorTextIdx=0;
             worldWidth=CORRIDOR_WIDTH; worldHeight=CORRIDOR_HEIGHT; currentWorld='corridor'; bossAppearedThisWave=false;
-            camera.x=0; camera.y=0; mouseLeftDown=false; mouseRightDown=false; healFlashTimer=0; paused=false; layoutWarning=0;
+            camera.x=0; camera.y=0; mouseLeftDown=false; mouseRightDown=false; healFlashTimer=0; paused=false; layoutWarning=0; adState=null; lastMadnessLevel=0;
         }
         function enterArena(){
             currentWorld='arena'; worldWidth=ARENA_WIDTH; worldHeight=ARENA_HEIGHT;
             player.x=ARENA_WIDTH/2; player.y=ARENA_HEIGHT/2;
             waveNumber=1; waveActive=false; wavePauseTimer=1.5; waveEnemiesRemaining=0;
             enemies=[]; bullets=[]; particles=[]; bloodStains=[]; organs=[]; thrownEyes=[]; fires=[];
-            generateObstacles(); bossAppearedThisWave=false; paused=false; layoutWarning=0;
+            generateObstacles(); bossAppearedThisWave=false; paused=false; layoutWarning=0; adState=null; lastMadnessLevel=0;
         }
         function spawnWave(){
             waveActive=true; bossAppearedThisWave=false;
@@ -651,6 +673,35 @@
             if (layoutWarning > 0) layoutWarning -= dt;
             if (healFlashTimer > 0) healFlashTimer -= dt;
 
+            // Отслеживание изменения уровня безумия
+            const currentMadness = getMadnessLevel(player ? player.madnessPoints : 0).level;
+            if (gameState === STATE.PLAYING && currentMadness !== lastMadnessLevel) {
+                if (currentMadness > lastMadnessLevel) triggerAd('up');
+                else if (currentMadness < lastMadnessLevel) triggerAd('down');
+                lastMadnessLevel = currentMadness;
+            }
+
+            // Анимация рекламной панели
+            if (adState) {
+                adState.timer += dt;
+                if (adState.timer < 1.5) {
+                    // Выезд
+                    adState.x = -400 + (80 + 400) * Math.min(1, adState.timer / 1.5);
+                    adState.alpha = Math.min(1, adState.timer / 1.2);
+                } else if (adState.timer < adState.duration - 1.5) {
+                    // Стоит на месте
+                    adState.x = 80;
+                    adState.alpha = 1;
+                } else if (adState.timer < adState.duration) {
+                    // Уезд
+                    const progress = (adState.timer - (adState.duration - 1.5)) / 1.5;
+                    adState.x = 80 - (80 + 400) * progress;
+                    adState.alpha = 1 - progress;
+                } else {
+                    adState = null; // закончили
+                }
+            }
+
             if(gameState===STATE.MENU){ menuBtns=drawMenu(); howBtns=null; deathBtns=null; pauseBtns=null; }
             else if(gameState===STATE.HOWTO){ howBtns=drawHowTo(); menuBtns=null; deathBtns=null; pauseBtns=null; }
             else if(gameState===STATE.CORRIDOR){
@@ -714,6 +765,46 @@
                 drawArena(); for(const s of bloodStains) s.draw(ctx,camera.x,camera.y); player.draw(ctx,camera.x,camera.y);
                 for(const e of enemies) e.draw(ctx,camera.x,camera.y); for(const b of bullets) b.draw(ctx,camera.x,camera.y);
                 for(const p of particles) p.draw(ctx,camera.x,camera.y); deathBtns=drawDeath();
+            }
+
+            // Рисуем рекламную панель
+            if (adState) {
+                ctx.save();
+                ctx.globalAlpha = adState.alpha;
+                const panelX = adState.x;
+                const panelY = adState.y;
+                // Тень
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(panelX+5, panelY+5, 320, 180);
+                // Фон панели
+                ctx.fillStyle = '#222';
+                ctx.fillRect(panelX, panelY, 320, 180);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(panelX, panelY, 320, 180);
+                // Картинка
+                if (adState.image && adState.image.complete) {
+                    ctx.drawImage(adState.image, panelX+10, panelY+10, 140, 140);
+                }
+                // Текст
+                ctx.fillStyle = '#ffff00';
+                ctx.font = 'bold 16px monospace';
+                const text = adState.type === 'up' ? 'Вауу, маладес скибиди сигма, продолжай в том же духе' : 'БРО, НАЧИНАЙ РАБОТАТЬ, ТЫ ДЕЛАЕШ ТОЛЬКО ХУЖЕЕЕ';
+                const words = text.split(' ');
+                let line = '';
+                let yOff = panelY + 30;
+                for (const word of words) {
+                    const testLine = line + word + ' ';
+                    if (ctx.measureText(testLine).width > 150 && line !== '') {
+                        ctx.fillText(line, panelX + 160, yOff);
+                        yOff += 24;
+                        line = word + ' ';
+                    } else {
+                        line = testLine;
+                    }
+                }
+                ctx.fillText(line, panelX + 160, yOff);
+                ctx.restore();
             }
 
             // Кастомный курсор
