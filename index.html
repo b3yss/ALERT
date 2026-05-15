@@ -53,7 +53,7 @@
                 VH = 720,
                 ARENA_W = 1400,
                 ARENA_H = 1000,
-                CORR_W = 3000,
+                CORR_W = 3900,
                 CORR_H = 280;
             const PLAYER_SPD = 440,
                 HP_MAX = 200,
@@ -92,6 +92,8 @@
             const FIRE_LIFE = 16,
                 FIRE_DMG_INT = 0.5,
                 TURRET_RANGE = 350;
+            const CORPSE_LIFETIME = 120; // труп живёт 60 секунд
+            const LOOT_CHANCE = 1.2;    // шанс найти орган в трупе
 
             // ДОСТИЖЕНИЯ
             const ACHIEVEMENTS = [
@@ -129,7 +131,7 @@
             const adUp = new Image();
             adUp.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOTLcskIJU1IbFHPE7zHU24h580TrHyVXqFQ&s';
             const adDown = new Image();
-            adDown.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSB3n8ffMEh5KzKRvDsfsdFiHGoPD_xaS1Ylg&s';
+            adDown.src = 'https://i.pinimg.com/originals/a9/e8/37/a9e837bbe66e316a8d325bb4e15718e3.gif';
 
             function ad(type) { adState = { type, timer: 0, img: type === 'up' ? adUp : adDown, x: -400, y: VH -
                     200, alpha: 0, dur: 6 }; }
@@ -160,6 +162,9 @@
             function stickSnd() { bip(300, 0.15, 'sine', 0.07);
                 bip(100, 0.1, 'triangle', 0.04) }
 
+            function brutalStickSnd() { bip(200, 0.2, 'sawtooth', 0.2);
+                bip(80, 0.3, 'square', 0.15) } // новый звук жёсткого удара
+
             function deathSnd() { bip(60, 0.2, 'sawtooth', 0.1);
                 bip(30, 0.3, 'square', 0.08) }
 
@@ -184,7 +189,6 @@
 
             function burnSnd() { bip(200, 0.2, 'sawtooth', 0.1);
                 bip(150, 0.3, 'square', 0.08) }
-            // Звук появления босса
             function bossAppearSnd() { const now = audioCtx.currentTime;
                 bip(65, 0.8, 'sawtooth', 0.2);
                 bip(55, 1.0, 'square', 0.15);
@@ -223,7 +227,7 @@
             document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true;
                 keys[e.code] = true; if (e.key === 'Escape') { if (state === STATE.PLAY || state === STATE.CORR)
                     paused = !paused;
-                e.preventDefault(); } if (['k', 'r', '1', '2', 'shift', 'e', 'g'].includes(e.key.toLowerCase()) ||
+                e.preventDefault(); } if (['k', 'r', '1', '2', 'shift', 'e', 'g', 'q', 'u'].includes(e.key.toLowerCase()) ||
                     e.key === 'Shift') e.preventDefault(); if (/[а-яё]/i.test(e.key)) layoutW = 2.5; });
             document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false;
                 keys[e.code] = false; });
@@ -259,7 +263,8 @@
             let cam = { x: 0, y: 0, tx: 0, ty: 0 },
                 healFlash = 0,
                 redScreen = 0;
-            let bossAppearTimer = 0; // таймер эффекта появления босса
+            let bossAppearTimer = 0;
+            let secretShown = false; // для секретной фразы
 
             function upCam(px, py, wW, wH, dt) { cam.tx = px - VW / 2;
                 cam.ty = py - VH / 2;
@@ -362,6 +367,66 @@
                         ctx.beginPath();
                         ctx.arc(sx, sy, this.r - 3, 0, Math.PI * 2);
                         ctx.fill(); } } }
+            // Новый класс: брошенный объект (декор или труп)
+            class ThrownObject { constructor(x, y, angle, type, damage) { this.x = x;
+                    this.y = y;
+                    this.angle = angle;
+                    this.speed = 600;
+                    this.r = 8;
+                    this.alive = true;
+                    this.type = type; // 'box' или 'corpse'
+                    this.damage = damage || 40; } up(dt, wW, wH) { this.x += Math.cos(this.angle) * this.speed * dt;
+                    this.y += Math.sin(this.angle) * this.speed * dt; if (this.x < -50 || this.x > wW + 50 || this
+                        .y < -50 || this.y > wH + 50) this.alive = false; } draw(ctx, cx, cy) { if (!this.alive)
+                        return; ctx.fillStyle = this.type === 'corpse' ? '#5a3a3a' : '#8B7355';
+                    ctx.fillRect(this.x - cx - 6, this.y - cy - 6, 12, 12);
+                    ctx.strokeStyle = '#000';
+                    ctx.strokeRect(this.x - cx - 6, this.y - cy - 6, 12, 12); } }
+            // Новый класс: труп врага
+            class Corpse { constructor(x, y, enemyType) { this.x = x;
+                    this.y = y;
+                    this.type = enemyType;
+                    this.life = CORPSE_LIFETIME;
+                    this.looted = false;
+                    this.r = enemyType === 'saw' ? 14 : enemyType === 'pistol' ? 13 : 18; } up(dt) { this.life -= dt; return this
+                        .life > 0; } draw(ctx, cx, cy) { let sx = this.x - cx,
+                        sy = this.y - cy;
+                    ctx.save();
+                    ctx.translate(sx, sy);
+                    ctx.globalAlpha = Math.min(1, this.life / 5);
+                    ctx.fillStyle = '#5a3a3a';
+                    ctx.fillRect(-8, -4, 16, 12);
+                    ctx.fillStyle = '#3a2a2a';
+                    ctx.fillRect(-6, 8, 4, 8);
+                    ctx.fillRect(2, 8, 4, 8);
+                    ctx.fillStyle = '#7a5a5a';
+                    ctx.beginPath();
+                    ctx.arc(0, -10, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                    // глаза Х
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-5, -12);
+                    ctx.lineTo(-1, -8);
+                    ctx.moveTo(-1, -12);
+                    ctx.lineTo(-5, -8);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(1, -12);
+                    ctx.lineTo(5, -8);
+                    ctx.moveTo(5, -12);
+                    ctx.lineTo(1, -8);
+                    ctx.stroke();
+                    // кровь
+                    ctx.fillStyle = '#600';
+                    ctx.beginPath();
+                    ctx.arc(-3, 5, 4, 0, Math.PI);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(4, 7, 3, 0, Math.PI);
+                    ctx.fill();
+                    ctx.restore(); } }
 
             class Player {
                 constructor(x, y) { this.x = x;
@@ -410,7 +475,9 @@
                     this.burnedEnemy = false;
                     this.maxOrgansEver = 0;
                     this.deagleKills = 0;
-                    this.stickKills = 0; }
+                    this.stickKills = 0;
+                    this.holdingObject = null; // { type: 'box'|'corpse', obj: ссылка на объект? } для декора/трупа
+                }
                 reset(x, y) { this.x = x;
                     this.y = y;
                     this.hp = this.maxHp;
@@ -452,10 +519,11 @@
                     this.burnedEnemy = false;
                     this.maxOrgansEver = 0;
                     this.deagleKills = 0;
-                    this.stickKills = 0; }
+                    this.stickKills = 0;
+                    this.holdingObject = null; }
                 takeDamage(dmg) { this.hp -= dmg;
                     redScreen = 0.3; if (this.hp < 0) this.hp = 0; }
-                up(dt, wW, wH, bullets, parts, blood, obs, thrown, fire) { if (this.casings > CASE_TH5 && !this
+                up(dt, wW, wH, bullets, parts, blood, obs, thrown, fire, corpses) { if (this.casings > CASE_TH5 && !this
                         .shaking) { this.jt += dt; let int = this.casings > CASE_TH10 ? JITTER10 : JITTER5; if (
                             this.jt > 0.08) { this.jt = 0;
                             this.jx = (Math.random() - 0.5) * int * 8;
@@ -524,19 +592,37 @@
                             f.x - this.x, f.y - this.y) < f.r + 10) { this.fireT += dt; while (this
                         .fireT >= FIRE_DMG_INT) { this.fireT -= FIRE_DMG_INT;
                         this.takeDamage(1); } break; } } if (keys['1'] || (mwDelta < -30 && this.weapon !==
-                        'stick')) { this.weapon = 'stick';
+                        'stick') && !this.holdingObject) { this.weapon = 'stick';
                         mwDelta = 0;
-                        keys['1'] = false; } if (keys['2'] || (mwDelta > 30 && this.weapon !== 'deagle')) { this
-                            .weapon = 'deagle';
+                        keys['1'] = false; } if (keys['2'] || (mwDelta > 30 && this.weapon !== 'deagle') && !this
+                        .holdingObject) { this.weapon = 'deagle';
                         mwDelta = 0;
-                        keys['2'] = false; } if (Math.abs(mwDelta) > 60) mwDelta = 0; if (mr && this.weapon ===
-                        'stick' && this.stickCd <= 0 && !this.shaking) { this.stickCd = STICK_CD;
-                        stickSnd(); for (let e of enemies) { let d = Math.hypot(e.x - this.x, e.y - this.y); if (
-                                d < STICK_R + e.r) { e.takeDmg(STICK_DMG, this, parts, 'stick'); for (let i =
-                                    0; i < 3; i++) blood.push(new Blood(e.x + (Math.random() - 0.5) * 20, e
-                                    .y + (Math.random() - 0.5) * 20, 3 + Math.random() * 8)); } } for (let i =
-                            0; i < 6; i++) parts.push(new Particle(this.x, this.y, this.angle + (Math.random() -
-                                0.5) * 1.2, 150 + Math.random() * 200, '#8B7355', 0.25));
+                        keys['2'] = false; } if (Math.abs(mwDelta) > 60) mwDelta = 0;
+                    // Бросок предмета или атака только если нет предмета в руках
+                    if (this.holdingObject) {
+                        if (keys['q']) { // бросить предмет
+                            this.throwHeldObject(thrown);
+                            keys['q'] = false;
+                        }
+                        return; // с предметом нельзя атаковать, только двигаться
+                    }
+                    if (mr && this.weapon === 'stick' && this.stickCd <= 0 && !this.shaking) { this.stickCd = STICK_CD;
+                        stickSnd();
+                        brutalStickSnd(); // дополнительный жёсткий звук
+                        for (let e of enemies) { let d = Math.hypot(e.x - this.x, e.y - this.y); if (d < STICK_R + e.r) { e
+                                    .takeDmg(STICK_DMG, this, parts, 'stick');
+                                // отбрасывание
+                                let ang = Math.atan2(e.y - this.y, e.x - this.x);
+                                e.x += Math.cos(ang) * 60;
+                                e.y += Math.sin(ang) * 60;
+                                e.stunT = 0.5; // краткий стан
+                                for (let i = 0; i < 8; i++) blood.push(new Blood(e.x + (Math.random() - 0.5) * 20, e.y + (Math.random() -
+                                        0.5) * 20, 3 + Math.random() * 12));
+                                // частицы мяса
+                                for (let i = 0; i < 10; i++) parts.push(new Particle(e.x, e.y, Math.random() * Math.PI * 2,
+                                    120 + Math.random() * 200, '#cc0000', 0.6)); } } for (let i = 0; i < 12; i++) parts
+                            .push(new Particle(this.x, this.y, this.angle + (Math.random() - 0.5) * 1.5, 180 + Math.random() *
+                                250, '#8B7355', 0.3));
                         mr = false; } if (ml && this.weapon === 'deagle' && this.deagleLoaded && !this.deagleReload &&
                         !this.shaking) { this.deagleLoaded = false;
                         shootSnd(); let sa = this.angle; if (this.casings > CASE_TH10) sa += (Math.random() - 0.5) *
@@ -582,7 +668,7 @@
                         this.stickKills++; if (this.stickKills >= 50) unlockAch('stick_champ'); } else { this
                         .deagleKills++; if (this.deagleKills >= 100) unlockAch('deagle_master'); } if (
                     isCrit) { pts = CRIT_BONUS;
-                        this.styleTxt = 'ОБЕЗГЛАВЛЕН!';
+                        this.styleTxt = 'ЖЁСТЧЕ1!!';
                         this.styleT = 2; } if (this.killsW >= 2 && this.multiKT > 0) { pts += MULTI_BONUS;
                         this.madMult = Math.max(this.madMult, 1.5);
                         this.madMultT = 3; }
@@ -596,6 +682,15 @@
                         this.styleTxt = 'БЕЗУМНЫЙ!';
                         this.styleT = 2; }
                     this.maxMad = Math.max(this.maxMad, this.madPts); }
+                // Бросок того, что держит игрок
+                throwHeldObject(thrown) {
+                    if (!this.holdingObject) return;
+                    let type = this.holdingObject.type;
+                    let damage = type === 'corpse' ? 20 : 40;
+                    let thrownObj = new ThrownObject(this.x, this.y, this.angle, type, damage);
+                    thrown.push(thrownObj);
+                    this.holdingObject = null;
+                }
                 draw(ctx, cx, cy) { let sx = this.x - cx + this.jx,
                         sy = this.y - cy + this.jy;
                     ctx.save();
@@ -628,7 +723,14 @@
                     ctx.fillStyle = '#3a3a3a';
                     ctx.fillRect(-16, -6, 5, 8);
                     ctx.fillStyle = '#c0c0c0';
-                    ctx.fillRect(-15, -4, 3, 3); if (this.weapon === 'stick') { ctx.strokeStyle = '#8B7355';
+                    ctx.fillRect(-15, -4, 3, 3);
+                    if (this.holdingObject) {
+                        // рисуем предмет в руках
+                        ctx.fillStyle = this.holdingObject.type === 'corpse' ? '#5a3a3a' : '#8B7355';
+                        ctx.fillRect(18, -8, 14, 14);
+                        ctx.strokeStyle = '#000';
+                        ctx.strokeRect(18, -8, 14, 14);
+                    } else if (this.weapon === 'stick') { ctx.strokeStyle = '#8B7355';
                         ctx.lineWidth = 3;
                         ctx.beginPath();
                         ctx.moveTo(14, -6);
@@ -750,12 +852,22 @@
                         this.y -= Math.sin(ang) * mv; } } else if (this.type === 'boss') { this.x += Math.cos(ang) *
                         mv;
                     this.y += Math.sin(ang) * mv;
-                    this.floatY = Math.sin(performance.now() * 0.003) * 5; } else { this.x += Math.cos(ang) * mv;
+                    this.floatY = Math.sin(performance.now() * 0.003) * 5;
+                    // ломаем декор
+                    for (let i = obs.length-1; i >= 0; i--) {
+                        let o = obs[i];
+                        if (this.x - this.r < o.x + o.w && this.x + this.r > o.x &&
+                            this.y - this.r < o.y + o.h && this.y + this.r > o.y) {
+                            obs.splice(i,1);
+                            for (let j=0; j<6; j++) parts.push(new Particle(o.x+o.w/2, o.y+o.h/2, Math.random()*Math.PI*2, 100, '#8B7355', 0.5));
+                        }
+                    }
+                    } else { this.x += Math.cos(ang) * mv;
                         this.y += Math.sin(ang) * mv; } if (this.type !== 'boss') { let mrg = this.r + 2;
                         this.x = Math.max(mrg, Math.min(wW - mrg, this.x));
                         this.y = Math.max(mrg, Math.min(wH - mrg, this.y)); } else { this.x = Math.max(-20, Math.min(
                             wW + 20, this.x));
-                        this.y = Math.max(-20, Math.min(wH + 20, this.y)); } if (this.collideObs(this.x, this.y,
+                        this.y = Math.max(-20, Math.min(wH + 20, this.y)); } if (this.type !== 'boss' && this.collideObs(this.x, this.y,
                     obs)) { this.x -= Math.cos(ang) * mv;
                         this.y -= Math.sin(ang) * mv; } if (this.type === 'boss') { this.turretT -= dt; if (this
                         .turretT <= 0 && enemies.length < 30) { this.turretT = 5; let spread = Math.random() *
@@ -792,16 +904,14 @@
                         sy = this.y - cy;
                     ctx.save();
                     ctx.translate(sx, sy); if (this.type === 'boss') {
-                        // Ангел Смерти
+                        // Ангел Смерти (без изменений)
                         let bossY = this.floatY;
                         ctx.translate(0, bossY);
-                        // Свечение венка
                         let glowIntensity = 0.5 + Math.sin(performance.now() * 0.005) * 0.3;
                         ctx.fillStyle = `rgba(255, 100, 0, ${glowIntensity})`;
                         ctx.beginPath();
                         ctx.arc(0, -this.r - 15, this.r * 1.2, 0, Math.PI * 2);
                         ctx.fill();
-                        // Крылья (сложенные как плащ)
                         ctx.fillStyle = '#3a3a3a';
                         ctx.beginPath();
                         ctx.moveTo(-20, -this.r + 10);
@@ -820,11 +930,9 @@
                         ctx.lineTo(30, 20);
                         ctx.closePath();
                         ctx.fill();
-                        // Скелетированные вставки на крыльях
                         ctx.fillStyle = '#ddd';
                         ctx.fillRect(-35, -this.r - 5, 10, 2);
                         ctx.fillRect(25, -this.r - 5, 10, 2);
-                        // Ряса
                         ctx.fillStyle = '#1a1a1a';
                         ctx.beginPath();
                         ctx.moveTo(-25, -10);
@@ -836,14 +944,12 @@
                         ctx.lineTo(25, -10);
                         ctx.closePath();
                         ctx.fill();
-                        // Золотые наплечники
                         ctx.fillStyle = '#b8860b';
                         ctx.fillRect(-28, -15, 12, 8);
                         ctx.fillRect(16, -15, 12, 8);
                         ctx.fillStyle = '#ffd700';
                         ctx.fillRect(-26, -14, 2, 6);
                         ctx.fillRect(24, -14, 2, 6);
-                        // Череп
                         ctx.fillStyle = '#ddd';
                         ctx.beginPath();
                         ctx.arc(0, -this.r - 5, 18, 0, Math.PI * 2);
@@ -851,11 +957,9 @@
                         ctx.fillStyle = '#000';
                         ctx.fillRect(-12, -this.r - 12, 8, 6);
                         ctx.fillRect(4, -this.r - 12, 8, 6);
-                        // Кровавые слёзы
                         ctx.fillStyle = '#ff0000';
                         ctx.fillRect(-9, -this.r - 6, 2, 8);
                         ctx.fillRect(7, -this.r - 6, 2, 8);
-                        // Терновый венок
                         ctx.strokeStyle = '#ffd700';
                         ctx.lineWidth = 3;
                         ctx.beginPath();
@@ -868,7 +972,6 @@
                             ctx.fillStyle = '#ff6600';
                             ctx.fillRect(spikeX - 1, spikeY - 4, 2, 8);
                         }
-                        // УЗИ-миниган (в правой руке)
                         ctx.fillStyle = '#333';
                         ctx.fillRect(15, -15, 25, 10);
                         ctx.fillStyle = '#555';
@@ -878,14 +981,12 @@
                         ctx.fillStyle = '#ffd700';
                         ctx.fillRect(18, -16, 2, 2);
                         ctx.fillRect(28, -16, 2, 2);
-                        // Лента патронов
                         ctx.strokeStyle = '#8b4513';
                         ctx.lineWidth = 2;
                         ctx.beginPath();
                         ctx.moveTo(15, -10);
                         ctx.lineTo(-5, -20);
                         ctx.stroke();
-                        // Кадило (в левой руке)
                         ctx.fillStyle = '#666';
                         ctx.beginPath();
                         ctx.arc(-25, -10, 8, 0, Math.PI * 2);
@@ -899,7 +1000,6 @@
                         ctx.moveTo(-25, -18);
                         ctx.lineTo(-25, -10);
                         ctx.stroke();
-                        // Символ на груди (сердце с клинками)
                         ctx.fillStyle = '#ff0000';
                         ctx.fillRect(-3, -2, 6, 6);
                         ctx.fillStyle = '#ffd700';
@@ -973,7 +1073,6 @@
                         ctx.fillStyle = '#f00';
                         ctx.fillRect(-bw / 2, by, bw * (this.hp / this.maxHp), bh); }
                     ctx.restore(); }
-                // *** ИЗМЕНЕНИЕ: босс не умирает от огня ***
                 burn(fire) { if (!this.alive || this.type === 'turret' || this.type === 'boss') return; for (let f of fire) { if (Math.hypot(f
                             .x - this.x, f.y - this.y) < f.r + this.r) { this.alive = false;
                         burnSnd(); for (let i = 0; i < 8; i++) parts.push(new Particle(this.x, this.y, Math.random() *
@@ -1028,8 +1127,10 @@
                 blood = [],
                 organs = [],
                 thrown = [],
+                thrownObjects = [], // новый массив для брошенных предметов
                 fires = [],
-                obstacles = [];
+                obstacles = [],
+                corpses = []; // массив трупов
             let waveNum = 1,
                 waveLeft = 0,
                 wavePause = 0,
@@ -1040,8 +1141,9 @@
                 corrIdx = 0;
             const corrTexts = ['Они заслужили боль.', 'Ты не сможешь остановиться.', 'Убей их всех. Разорви.',
                 'Тишина это слабость.', 'Кровь очищает.', 'Иди вперёд. Там твоя сцена.', 'Маска скрывает правду.',
-                'Часы тикают. Тик так.', 'Гильзы в ботинке... неприятно.', 'Слушай голос внутри.', 'Ты — Илерт?'
+                'Часы тикают. Тик так.', 'Гильзы в ботинке... неприятно.', 'Слушай голос внутри.' // убрали "Ты — Илерт?"
             ];
+            const secretPhrase = 'Ты — Илерт?';
             let wW = CORR_W,
                 wH = CORR_H,
                 curWorld = 'corridor',
@@ -1062,8 +1164,10 @@
                 blood = [];
                 organs = [];
                 thrown = [];
+                thrownObjects = [];
                 fires = [];
                 obstacles = [];
+                corpses = [];
                 waveNum = 1;
                 waveLeft = 0;
                 wavePause = 0;
@@ -1086,7 +1190,8 @@
                 layoutW = 0;
                 adState = null;
                 lastMad = 0;
-                bossAppearTimer = 0; }
+                bossAppearTimer = 0;
+                secretShown = false; }
 
             function enterArena() { curWorld = 'arena';
                 wW = ARENA_W;
@@ -1103,14 +1208,17 @@
                 blood = [];
                 organs = [];
                 thrown = [];
+                thrownObjects = [];
                 fires = [];
+                corpses = [];
                 genObs();
                 bossAppear = false;
                 paused = false;
                 layoutW = 0;
                 adState = null;
                 lastMad = 0;
-                bossAppearTimer = 0; }
+                bossAppearTimer = 0;
+                secretShown = false; }
 
             function spawnWave() { waveActive = true;
                 bossAppear = false; let ds = diffSet[diff]; let base = Math.floor(waveNum * ds.waveA); let saw = Math.max(
@@ -1143,18 +1251,74 @@
                         Particle(player.x, player.y, Math.random() * Math.PI * 2, 80, '#f44', 0.3));
                     blood.push(new Blood(player.x + (Math.random() - 0.5) * 15, player.y + (Math.random() - 0.5) *
                         15, 2 + Math.random() * 5)); } }
-                // *** ИЗМЕНЕНИЕ: босс не оглушается органами ***
                 for (let t of thrown) { if (!t.alive) continue; for (let e of
                         enemies) { if (!e.alive) continue; if (Math.hypot(t.x - e.x, t.y - e.y) < e.r + t.r) { t.alive =
                             false; if (e.type !== 'turret' && e.type !== 'boss') { e.stunT = ORGAN_STUN;
                         hitSnd(); for (let i = 0; i < 3; i++) parts.push(new Particle(e.x, e.y, Math.random() * Math
                                 .PI * 2, 100, '#fff', 0.3)); } else { for (let i = 0; i < 3; i++) parts.push(new
                                 Particle(e.x, e.y, Math.random() * Math.PI * 2, 60, '#aaa', 0.3));
-                        player.threwOrganAtTurret = true;
+                        if (e.type === 'turret') player.threwOrganAtTurret = true;
                         unlockAch('machine_no_fear'); } break; } } }
+                // Брошенные предметы (декор/трупы)
+                for (let obj of thrownObjects) { if (!obj.alive) continue; for (let e of enemies) { if (!e.alive) continue; if (Math.hypot(obj.x - e.x, obj.y - e.y) < e.r + obj.r) { obj.alive = false;
+                            e.takeDmg(obj.damage, player, parts, 'object');
+                            e.stunT = 0.8; // оглушение
+                            for (let i = 0; i < 5; i++) parts.push(new Particle(e.x, e.y, Math.random()*Math.PI*2, 80, '#8B7355', 0.5));
+                            break; } } }
                 for (let i = organs.length - 1; i >= 0; i--) { let o =
                         organs[i]; if (o.life > 0 && Math.hypot(o.x - player.x, o.y - player.y) < 20) { player.organs++;
-                        organs.splice(i, 1); } } for (let e of enemies) e.burn(fires); }
+                        organs.splice(i, 1); } }
+                // обыск трупов (U)
+                if (keys['u'] && corpses.length > 0) {
+                    for (let i = corpses.length-1; i >= 0; i--) {
+                        let c = corpses[i];
+                        if (!c.looted && Math.hypot(c.x - player.x, c.y - player.y) < 40) {
+                            if (Math.random() < LOOT_CHANCE) {
+                                let types = ['eye','brain','skull','guts','trachea'];
+                                let t = types[Math.floor(Math.random()*types.length)];
+                                organs.push(new Organ(c.x + (Math.random()-0.5)*20, c.y + (Math.random()-0.5)*20, t));
+                                addNotification('Орган из трупа', '🫀');
+                            } else {
+                                addNotification('Пусто', '🦴');
+                            }
+                            c.looted = true;
+                            corpses.splice(i,1); // труп исчезает после обыска
+                            break;
+                        }
+                    }
+                    keys['u'] = false;
+                }
+                // подбор декора/трупов на Q
+                if (keys['q'] && !player.holdingObject) {
+                    // сначала ищем ближайший труп (не разграбленный)
+                    let nearestCorpse = null;
+                    let minDist = 50;
+                    for (let c of corpses) {
+                        let d = Math.hypot(c.x - player.x, c.y - player.y);
+                        if (d < minDist && !c.looted) { minDist = d; nearestCorpse = c; }
+                    }
+                    if (nearestCorpse) {
+                        player.holdingObject = { type: 'corpse' };
+                        corpses.splice(corpses.indexOf(nearestCorpse),1);
+                        keys['q'] = false;
+                    } else {
+                        // ищем препятствие
+                        for (let i = obstacles.length-1; i >= 0; i--) {
+                            let o = obstacles[i];
+                            let cx = o.x + o.w/2, cy = o.y + o.h/2;
+                            if (Math.hypot(cx - player.x, cy - player.y) < 50) {
+                                player.holdingObject = { type: 'box' };
+                                obstacles.splice(i,1);
+                                keys['q'] = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                for (let e of enemies) e.burn(fires);
+                // трупы с истекшим временем удаляются
+                corpses = corpses.filter(c => c.life > 0);
+            }
 
             function upHi() { let hs = hiScore[diff]; if (gameScore > hs.s) hs.s = Math.floor(gameScore); if (waveNum >
                     hs.w) hs.w = waveNum;
@@ -1232,10 +1396,10 @@
                 ctx.fillText('КАК ИГРАТЬ', VW / 2, 60);
                 ctx.fillStyle = '#ccc';
                 ctx.font = '13px monospace';
-                ['WASD/Стрелки — передвижение', 'Мышь — прицеливание', 'ЛКМ — Deagle', 'ПКМ — Клюшка', 'R — перезарядка',
-                    'K — убрать гильзы', 'SHIFT — рывок (врезается, отбрасывает)', 'E — бросить орган (оглушает)',
-                    '1/2 или колёсико — смена оружия', '', 'Английская раскладка обязательна!',
-                    'Гильзы наносят урон только при ходьбе', 'Боссы каждые 10 волн', 'Турели взрываются, оставляя огонь'
+                ['WASD/Стрелки — передвижение', 'Мышь — прицеливание', 'ЛКМ — Deagle', 'ПКМ — Клюшка (жёстко)', 'R — перезарядка',
+                    'K — убрать гильзы', 'SHIFT — рывок', 'E — бросить орган', 'Q — подобрать/бросить предмет или труп',
+                    'U — обыскать труп', '1/2 или колёсико — смена оружия', 'Английская раскладка обязательна!',
+                    'Боссы ломают декор, трупы остаются', 'Space+B — секрет'
                 ].forEach((l, i) => ctx.fillText(l, VW / 2, 100 + i * 22));
                 drawBtn(VW / 2, VH - 70, 200, 40, 'НАЗАД', '#333', '#666', '#ccc'); return { back: { x: VW / 2 - 100,
                         y: VH - 90, w: 200, h: 40 } }; }
@@ -1259,7 +1423,13 @@
                 ctx.fillStyle = 'rgba(255,255,255,0.5)';
                 ctx.font = 'italic 22px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText(corrTexts[corrIdx], VW / 2, VH / 2 + 60); }
+                ctx.fillText(corrTexts[corrIdx], VW / 2, VH / 2 + 60);
+                // секретная фраза при активации
+                if (secretShown) {
+                    ctx.fillStyle = '#f00';
+                    ctx.font = 'bold 28px monospace';
+                    ctx.fillText(secretPhrase, VW / 2, VH / 2 + 100);
+                } }
 
             function drawDeath() { ctx.fillStyle = 'rgba(0,0,0,0.9)';
                 ctx.fillRect(0, 0, VW, VH);
@@ -1343,8 +1513,11 @@
                     `ЯРОСТНЫЙ x${player.madMult.toFixed(1)}` : ''; if (mult) { ctx.fillStyle = '#f60';
                     ctx.fillText(mult, hx, sy + 16); } if (player.styleTxt) { ctx.fillStyle = '#f00';
                     ctx.font = 'bold 14px monospace';
-                    ctx.fillText(player.styleTxt, hx, sy + 32); } let wy = sy + 50; if (player.weapon === 'stick') { ctx
-                        .fillStyle = '#fc0';
+                    ctx.fillText(player.styleTxt, hx, sy + 32); } let wy = sy + 50;
+                if (player.holdingObject) {
+                    ctx.fillStyle = '#0ff';
+                    ctx.fillText(`ДЕРЖИТ: ${player.holdingObject.type==='corpse'?'ТРУП':'КОРОБКА'} [Q]`, hx, wy);
+                } else if (player.weapon === 'stick') { ctx.fillStyle = '#fc0';
                     ctx.fillText('🏒 КЛЮШКА [1]', hx, wy); } else { ctx.fillStyle = '#fa0';
                     ctx.fillText(`🔫 DEAGLE [2] (${player.deagleLoaded?1:0})`, hx, wy); if (player.deagleReload) ctx
                         .fillText('ПЕРЕЗАРЯДКА...', hx + 180, wy); } let cy = wy + 18;
@@ -1381,8 +1554,10 @@
                     blood = [];
                     organs = [];
                     thrown = [];
+                    thrownObjects = [];
                     fires = [];
-                    obstacles = []; } return; } if (state === STATE.MENU && menuBtns) { if (isIn(m, menuBtns
+                    obstacles = [];
+                    corpses = []; } return; } if (state === STATE.MENU && menuBtns) { if (isIn(m, menuBtns
                         .play)) { resetGame();
                     state = STATE.CORR; } else if (isIn(m, menuBtns.how)) state = STATE.HOWTO; else if (isIn(m,
                         menuBtns.diff)) { let d = ['easy', 'medium', 'hard', 'insane'];
@@ -1396,8 +1571,10 @@
                     blood = [];
                     organs = [];
                     thrown = [];
+                    thrownObjects = [];
                     fires = [];
-                    obstacles = []; } } else if (state === STATE.ACH && achBtns && isIn(m, achBtns.back))
+                    obstacles = [];
+                    corpses = []; } } else if (state === STATE.ACH && achBtns && isIn(m, achBtns.back))
             state = STATE.MENU; });
 
             function isIn(m, r) { return m.x >= r.x && m.x <= r.x + r.w && m.y >= r.y && m.y <= r.y + r.h; }
@@ -1424,7 +1601,13 @@
                         adState.alpha = 1 - p; } else { adState = null; } } for (let i = notifications.length - 1; i >=
                     0; i--) { let n = notifications[i];
                     n.timer -= dt; if (n.timer > 2.5) n.y += (80 - n.y) * 10 * dt; else n.alpha -= dt * 2; if (n
-                        .timer <= 0 || n.alpha < 0) notifications.splice(i, 1); } if (state === STATE.MENU) {
+                        .timer <= 0 || n.alpha < 0) notifications.splice(i, 1); }
+                // Секретная комбинация Space + B
+                if (keys[' '] && keys['b'] && !secretShown) {
+                    secretShown = true;
+                    addNotification(secretPhrase, '💀');
+                }
+                if (state === STATE.MENU) {
                     menuBtns = drawMenu();
                     howBtns = null;
                     deathBtns = null;
@@ -1483,15 +1666,23 @@
                                 enemies = [];
                                 bullets = []; if (waveNum >= 10) unlockAch('wave10'); if (waveNum >= 30)
                                     unlockAch('tsunami'); } }
-                        player.up(dt, wW, wH, bullets, parts, blood, obstacles, thrown, fires); for (let e of
+                        player.up(dt, wW, wH, bullets, parts, blood, obstacles, thrown, fires, corpses); for (let e of
                             enemies) e.up(dt, player, bullets, parts, wW, wH, obstacles); for (let b of bullets) b
                             .up(dt, wW, wH); for (let p of parts) p.up(dt); for (let s of blood) s.up(dt); for (let o
-                                of organs) o.up(dt); for (let t of thrown) t.up(dt, wW, wH); for (let f of fires)
-                        f.up(dt);
+                                of organs) o.up(dt); for (let t of thrown) t.up(dt, wW, wH); for (let obj of thrownObjects) obj
+                            .up(dt, wW, wH); for (let f of fires) f.up(dt);
                         blood = blood.filter(s => s.life > 0);
                         organs = organs.filter(o => o.life > 0);
                         thrown = thrown.filter(t => t.alive);
+                        thrownObjects = thrownObjects.filter(obj => obj.alive);
                         fires = fires.filter(f => f.life > 0);
+                        // добавление трупов при смерти врагов (кроме боссов и турелей)
+                        for (let e of enemies) {
+                            if (!e.alive && e.type !== 'boss' && e.type !== 'turret' && !e._corpseCreated) {
+                                corpses.push(new Corpse(e.x, e.y, e.type));
+                                e._corpseCreated = true; // метка, чтобы не дублировать
+                            }
+                        }
                         checkColl();
                         enemies = enemies.filter(e => e.alive);
                         bullets = bullets.filter(b => b.alive);
@@ -1503,7 +1694,8 @@
                         ctx.strokeStyle = '#000';
                         ctx.strokeRect(o.x - cam.x, o.y - cam.y, o.w, o.h); } for (let f of fires) f.draw(ctx, cam.x,
                         cam.y); for (let s of blood) s.draw(ctx, cam.x, cam.y); for (let o of organs) o.draw(ctx, cam
-                        .x, cam.y); for (let t of thrown) t.draw(ctx, cam.x, cam.y);
+                        .x, cam.y); for (let t of thrown) t.draw(ctx, cam.x, cam.y); for (let obj of thrownObjects) obj.draw(ctx, cam.x, cam.y);
+                    for (let c of corpses) c.draw(ctx, cam.x, cam.y);
                     player.draw(ctx, cam.x, cam.y); for (let e of enemies) e.draw(ctx, cam.x, cam.y); for (let b of
                         bullets) b.draw(ctx, cam.x, cam.y); for (let p of parts) p.draw(ctx, cam.x, cam.y); if (
                         player.hp < 50) { ctx.fillStyle = `rgba(0,0,0,${0.6*(1-player.hp/50)})`;
@@ -1554,8 +1746,8 @@
                         .img, px + 10, py + 10, 140, 140);
                     ctx.fillStyle = '#ff0';
                     ctx.font = 'bold 16px monospace'; let text = adState.type === 'up' ?
-                        'Вауу, маладес скибиди сигма, продолжай в том же духе' :
-                        'БРО, НАЧИНАЙ РАБОТАТЬ, ТЫ ДЕЛАЕШ ТОЛЬКО ХУЖЕЕЕ'; let words = text.split(' '),
+                        'Вауу, маладес скибиди сигма, продолжай в том же духе, да' :
+                        'я знаю где живут твои родители'; let words = text.split(' '),
                         line = '',
                         yOff = py + 30; for (let w of words) { let test = line + w + ' '; if (ctx.measureText(test)
                             .width > 150 && line !== '') { ctx.fillText(line, px + 160, yOff);
