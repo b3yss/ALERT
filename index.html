@@ -92,8 +92,8 @@
             const FIRE_LIFE = 16,
                 FIRE_DMG_INT = 0.5,
                 TURRET_RANGE = 350;
-            const CORPSE_LIFETIME = 120; // труп живёт 60 секунд
-            const LOOT_CHANCE = 1.2;    // шанс найти орган в трупе
+            const CORPSE_LIFETIME = 120;
+            const LOOT_CHANCE = 1.2;
 
             // ДОСТИЖЕНИЯ
             const ACHIEVEMENTS = [
@@ -163,7 +163,7 @@
                 bip(100, 0.1, 'triangle', 0.04) }
 
             function brutalStickSnd() { bip(200, 0.2, 'sawtooth', 0.2);
-                bip(80, 0.3, 'square', 0.15) } // новый звук жёсткого удара
+                bip(80, 0.3, 'square', 0.15) }
 
             function deathSnd() { bip(60, 0.2, 'sawtooth', 0.1);
                 bip(30, 0.3, 'square', 0.08) }
@@ -195,19 +195,124 @@
                 bip(82, 0.6, 'triangle', 0.1);
                 bip(110, 0.7, 'sine', 0.08); }
 
-            const STATE = { MENU: 'menu', HOWTO: 'howto', CORR: 'corridor', PLAY: 'playing', DEAD: 'dead',
-                ACH: 'achievements' };
-            let state = STATE.MENU,
+            const STATE = { LOGIN: 'login', MENU: 'menu', HOWTO: 'howto', CORR: 'corridor', PLAY: 'playing', DEAD: 'dead',
+                ACH: 'achievements', LEADERBOARD: 'leaderboard' };
+            let state = STATE.LOGIN,
                 paused = false,
                 layoutW = 0,
                 diff = 'medium';
             let diffSet = { easy: { hpM: 0.7, spM: 0.8, spawnM: 0.6, waveA: 0.7 }, medium: { hpM: 1.0, spM: 1.0,
                     spawnM: 1.0, waveA: 1.0 }, hard: { hpM: 1.4, spM: 1.25, spawnM: 1.4, waveA: 1.3 },
                 insane: { hpM: 2.0, spM: 1.6, spawnM: 2.0, waveA: 1.7 } };
+
+            // Система аккаунтов
+            let currentUser = null;
+            let authUsers = [];
+            let loginUsername = '';
+            let loginPassword = '';
+            let loginError = '';
+            let loginMode = 'login'; // 'login' или 'register'
+            let activeLoginField = 0; // 0 - ник, 1 - пароль
+
+            function loadUsers() {
+                try {
+                    const saved = localStorage.getItem('alert_users');
+                    if (saved) authUsers = JSON.parse(saved);
+                } catch (e) { authUsers = []; }
+            }
+
+            function saveUsers() {
+                localStorage.setItem('alert_users', JSON.stringify(authUsers));
+            }
+
+            function findUser(username) {
+                return authUsers.find(u => u.username === username);
+            }
+
+            function registerUser(username, password) {
+                if (findUser(username)) return false;
+                const newUser = {
+                    username,
+                    password,
+                    highScores: {
+                        easy: { s: 0, w: 0 },
+                        medium: { s: 0, w: 0 },
+                        hard: { s: 0, w: 0 },
+                        insane: { s: 0, w: 0 }
+                    }
+                };
+                authUsers.push(newUser);
+                saveUsers();
+                return true;
+            }
+
+            function loginUser(username, password) {
+                const user = findUser(username);
+                if (!user || user.password !== password) return null;
+                return user;
+            }
+
+            function updateCurrentUserScore() {
+                if (!currentUser) return;
+                currentUser.highScores[diff] = { s: hiScore[diff].s, w: hiScore[diff].w };
+                const idx = authUsers.findIndex(u => u.username === currentUser.username);
+                if (idx !== -1) {
+                    authUsers[idx].highScores = { ...currentUser.highScores };
+                    saveUsers();
+                }
+            }
+
+            function getLeaderboard() {
+                const list = authUsers.map(u => {
+                    let bestScore = 0,
+                        bestWave = 0,
+                        bestDiff = '';
+                    for (let d in u.highScores) {
+                        if (u.highScores[d].s > bestScore) {
+                            bestScore = u.highScores[d].s;
+                            bestWave = u.highScores[d].w;
+                            bestDiff = d;
+                        }
+                    }
+                    return { username: u.username, score: bestScore, wave: bestWave, diff: bestDiff };
+                }).filter(e => e.score > 0);
+                list.sort((a, b) => b.score - a.score);
+                return list.slice(0, 20);
+            }
+
             let hiScore = { easy: { s: 0, w: 0 }, medium: { s: 0, w: 0 }, hard: { s: 0, w: 0 }, insane: { s: 0,
                 w: 0 } };
-            try { let s = localStorage.getItem('alert_hi'); if (s) { let p = JSON.parse(s); for (let k of Object.keys(
-                        hiScore)) if (p[k]) hiScore[k] = p[k]; } } catch (e) {}
+
+            function loadSession() {
+                try {
+                    const session = localStorage.getItem('alert_session');
+                    if (session) {
+                        const { username, password } = JSON.parse(session);
+                        const user = loginUser(username, password);
+                        if (user) {
+                            currentUser = user;
+                            hiScore = { ...user.highScores };
+                            state = STATE.MENU;
+                            return;
+                        }
+                    }
+                } catch (e) {}
+                state = STATE.LOGIN;
+            }
+
+            function saveSession() {
+                if (currentUser) {
+                    localStorage.setItem('alert_session', JSON.stringify({
+                        username: currentUser.username,
+                        password: currentUser.password
+                    }));
+                } else {
+                    localStorage.removeItem('alert_session');
+                }
+            }
+
+            loadUsers();
+            loadSession();
 
             const keys = {};
             let mx = VW / 2,
@@ -224,11 +329,57 @@
             let sx = VW / canvasRect.width,
                 sy = VH / canvasRect.height; return { x: (e.clientX - canvasRect.left) * sx, y: (e.clientY - canvasRect
                         .top) * sy }; }
-            document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true;
-                keys[e.code] = true; if (e.key === 'Escape') { if (state === STATE.PLAY || state === STATE.CORR)
-                    paused = !paused;
-                e.preventDefault(); } if (['k', 'r', '1', '2', 'shift', 'e', 'g', 'q', 'u'].includes(e.key.toLowerCase()) ||
-                    e.key === 'Shift') e.preventDefault(); if (/[а-яё]/i.test(e.key)) layoutW = 2.5; });
+            document.addEventListener('keydown', e => {
+                keys[e.key.toLowerCase()] = true;
+                keys[e.code] = true;
+                if (state === STATE.LOGIN) {
+                    if (e.key === 'Escape') return;
+                    if (e.key === 'Tab') { activeLoginField = 1 - activeLoginField;
+                        e.preventDefault(); return; }
+                    if (e.key === 'Enter') {
+                        if (loginMode === 'login') {
+                            const user = loginUser(loginUsername, loginPassword);
+                            if (user) {
+                                currentUser = user;
+                                hiScore = { ...user.highScores };
+                                saveSession();
+                                state = STATE.MENU;
+                                loginError = '';
+                            } else loginError = 'Неверный ник или пароль';
+                        } else {
+                            if (loginUsername.length < 3) loginError = 'Ник минимум 3 символа';
+                            else if (loginPassword.length < 1) loginError = 'Введите пароль';
+                            else if (registerUser(loginUsername, loginPassword)) {
+                                currentUser = findUser(loginUsername);
+                                hiScore = { ...currentUser.highScores };
+                                saveSession();
+                                state = STATE.MENU;
+                                loginError = '';
+                            } else loginError = 'Пользователь уже существует';
+                        }
+                        e.preventDefault();
+                        return;
+                    }
+                    if (e.key === 'Backspace') {
+                        if (activeLoginField === 0) loginUsername = loginUsername.slice(0, -1);
+                        else loginPassword = loginPassword.slice(0, -1);
+                        e.preventDefault();
+                        return;
+                    }
+                    if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                        if (activeLoginField === 0 && loginUsername.length < 15) loginUsername += e.key;
+                        else if (activeLoginField === 1 && loginPassword.length < 15) loginPassword += e.key;
+                        e.preventDefault();
+                        return;
+                    }
+                    e.preventDefault();
+                }
+                if (e.key === 'Escape') { if (state === STATE.PLAY || state === STATE.CORR) paused = !paused;
+                    e.preventDefault(); }
+                if (['k', 'r', '1', '2', 'shift', 'e', 'g', 'q', 'u'].includes(e.key.toLowerCase()) || e.key === 'Shift')
+                    e.preventDefault();
+                if (/[а-яё]/i.test(e.key)) layoutW = 2.5;
+            });
             document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false;
                 keys[e.code] = false; });
             canvas.addEventListener('mousemove', e => { let m = getMouse(e);
@@ -264,7 +415,7 @@
                 healFlash = 0,
                 redScreen = 0;
             let bossAppearTimer = 0;
-            let secretShown = false; // для секретной фразы
+            let secretShown = false;
 
             function upCam(px, py, wW, wH, dt) { cam.tx = px - VW / 2;
                 cam.ty = py - VH / 2;
@@ -367,14 +518,13 @@
                         ctx.beginPath();
                         ctx.arc(sx, sy, this.r - 3, 0, Math.PI * 2);
                         ctx.fill(); } } }
-            // Новый класс: брошенный объект (декор или труп)
             class ThrownObject { constructor(x, y, angle, type, damage) { this.x = x;
                     this.y = y;
                     this.angle = angle;
                     this.speed = 600;
                     this.r = 8;
                     this.alive = true;
-                    this.type = type; // 'box' или 'corpse'
+                    this.type = type;
                     this.damage = damage || 40; } up(dt, wW, wH) { this.x += Math.cos(this.angle) * this.speed * dt;
                     this.y += Math.sin(this.angle) * this.speed * dt; if (this.x < -50 || this.x > wW + 50 || this
                         .y < -50 || this.y > wH + 50) this.alive = false; } draw(ctx, cx, cy) { if (!this.alive)
@@ -382,7 +532,6 @@
                     ctx.fillRect(this.x - cx - 6, this.y - cy - 6, 12, 12);
                     ctx.strokeStyle = '#000';
                     ctx.strokeRect(this.x - cx - 6, this.y - cy - 6, 12, 12); } }
-            // Новый класс: труп врага
             class Corpse { constructor(x, y, enemyType) { this.x = x;
                     this.y = y;
                     this.type = enemyType;
@@ -403,7 +552,6 @@
                     ctx.beginPath();
                     ctx.arc(0, -10, 7, 0, Math.PI * 2);
                     ctx.fill();
-                    // глаза Х
                     ctx.strokeStyle = '#000';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
@@ -418,7 +566,6 @@
                     ctx.moveTo(5, -12);
                     ctx.lineTo(1, -8);
                     ctx.stroke();
-                    // кровь
                     ctx.fillStyle = '#600';
                     ctx.beginPath();
                     ctx.arc(-3, 5, 4, 0, Math.PI);
@@ -476,8 +623,7 @@
                     this.maxOrgansEver = 0;
                     this.deagleKills = 0;
                     this.stickKills = 0;
-                    this.holdingObject = null; // { type: 'box'|'corpse', obj: ссылка на объект? } для декора/трупа
-                }
+                    this.holdingObject = null; }
                 reset(x, y) { this.x = x;
                     this.y = y;
                     this.hp = this.maxHp;
@@ -598,31 +744,24 @@
                         .holdingObject) { this.weapon = 'deagle';
                         mwDelta = 0;
                         keys['2'] = false; } if (Math.abs(mwDelta) > 60) mwDelta = 0;
-                    // Бросок предмета или атака только если нет предмета в руках
                     if (this.holdingObject) {
-                        if (keys['q']) { // бросить предмет
-                            this.throwHeldObject(thrown);
-                            keys['q'] = false;
-                        }
-                        return; // с предметом нельзя атаковать, только двигаться
+                        if (keys['q']) { this.throwHeldObject(thrown);
+                            keys['q'] = false; }
+                        return;
                     }
                     if (mr && this.weapon === 'stick' && this.stickCd <= 0 && !this.shaking) { this.stickCd = STICK_CD;
                         stickSnd();
-                        brutalStickSnd(); // дополнительный жёсткий звук
-                        for (let e of enemies) { let d = Math.hypot(e.x - this.x, e.y - this.y); if (d < STICK_R + e.r) { e
-                                    .takeDmg(STICK_DMG, this, parts, 'stick');
-                                // отбрасывание
+                        brutalStickSnd(); for (let e of enemies) { let d = Math.hypot(e.x - this.x, e.y - this.y); if (d <
+                                STICK_R + e.r) { e.takeDmg(STICK_DMG, this, parts, 'stick');
                                 let ang = Math.atan2(e.y - this.y, e.x - this.x);
                                 e.x += Math.cos(ang) * 60;
                                 e.y += Math.sin(ang) * 60;
-                                e.stunT = 0.5; // краткий стан
-                                for (let i = 0; i < 8; i++) blood.push(new Blood(e.x + (Math.random() - 0.5) * 20, e.y + (Math.random() -
-                                        0.5) * 20, 3 + Math.random() * 12));
-                                // частицы мяса
-                                for (let i = 0; i < 10; i++) parts.push(new Particle(e.x, e.y, Math.random() * Math.PI * 2,
-                                    120 + Math.random() * 200, '#cc0000', 0.6)); } } for (let i = 0; i < 12; i++) parts
-                            .push(new Particle(this.x, this.y, this.angle + (Math.random() - 0.5) * 1.5, 180 + Math.random() *
-                                250, '#8B7355', 0.3));
+                                e.stunT = 0.5; for (let i = 0; i < 8; i++) blood.push(new Blood(e.x + (Math.random() - 0.5) *
+                                        20, e.y + (Math.random() - 0.5) * 20, 3 + Math.random() * 12)); for (let i = 0; i <
+                                        10; i++) parts.push(new Particle(e.x, e.y, Math.random() * Math.PI * 2, 120 + Math
+                                        .random() * 200, '#cc0000', 0.6)); } } for (let i = 0; i < 12; i++) parts.push(
+                                new Particle(this.x, this.y, this.angle + (Math.random() - 0.5) * 1.5, 180 + Math.random() *
+                                    250, '#8B7355', 0.3));
                         mr = false; } if (ml && this.weapon === 'deagle' && this.deagleLoaded && !this.deagleReload &&
                         !this.shaking) { this.deagleLoaded = false;
                         shootSnd(); let sa = this.angle; if (this.casings > CASE_TH10) sa += (Math.random() - 0.5) *
@@ -682,7 +821,6 @@
                         this.styleTxt = 'БЕЗУМНЫЙ!';
                         this.styleT = 2; }
                     this.maxMad = Math.max(this.maxMad, this.madPts); }
-                // Бросок того, что держит игрок
                 throwHeldObject(thrown) {
                     if (!this.holdingObject) return;
                     let type = this.holdingObject.type;
@@ -725,7 +863,6 @@
                     ctx.fillStyle = '#c0c0c0';
                     ctx.fillRect(-15, -4, 3, 3);
                     if (this.holdingObject) {
-                        // рисуем предмет в руках
                         ctx.fillStyle = this.holdingObject.type === 'corpse' ? '#5a3a3a' : '#8B7355';
                         ctx.fillRect(18, -8, 14, 14);
                         ctx.strokeStyle = '#000';
@@ -852,17 +989,11 @@
                         this.y -= Math.sin(ang) * mv; } } else if (this.type === 'boss') { this.x += Math.cos(ang) *
                         mv;
                     this.y += Math.sin(ang) * mv;
-                    this.floatY = Math.sin(performance.now() * 0.003) * 5;
-                    // ломаем декор
-                    for (let i = obs.length-1; i >= 0; i--) {
-                        let o = obs[i];
-                        if (this.x - this.r < o.x + o.w && this.x + this.r > o.x &&
-                            this.y - this.r < o.y + o.h && this.y + this.r > o.y) {
-                            obs.splice(i,1);
-                            for (let j=0; j<6; j++) parts.push(new Particle(o.x+o.w/2, o.y+o.h/2, Math.random()*Math.PI*2, 100, '#8B7355', 0.5));
-                        }
-                    }
-                    } else { this.x += Math.cos(ang) * mv;
+                    this.floatY = Math.sin(performance.now() * 0.003) * 5; for (let i = obs.length - 1; i >= 0; i--) { let
+                            o = obs[i]; if (this.x - this.r < o.x + o.w && this.x + this.r > o.x && this.y - this.r < o
+                                .y + o.h && this.y + this.r > o.y) { obs.splice(i, 1); for (let j = 0; j < 6; j++) parts
+                                    .push(new Particle(o.x + o.w / 2, o.y + o.h / 2, Math.random() * Math.PI * 2, 100,
+                                        '#8B7355', 0.5)); } } } else { this.x += Math.cos(ang) * mv;
                         this.y += Math.sin(ang) * mv; } if (this.type !== 'boss') { let mrg = this.r + 2;
                         this.x = Math.max(mrg, Math.min(wW - mrg, this.x));
                         this.y = Math.max(mrg, Math.min(wH - mrg, this.y)); } else { this.x = Math.max(-20, Math.min(
@@ -903,11 +1034,8 @@
                 draw(ctx, cx, cy) { if (!this.alive) return; let sx = this.x - cx,
                         sy = this.y - cy;
                     ctx.save();
-                    ctx.translate(sx, sy); if (this.type === 'boss') {
-                        // Ангел Смерти (без изменений)
-                        let bossY = this.floatY;
-                        ctx.translate(0, bossY);
-                        let glowIntensity = 0.5 + Math.sin(performance.now() * 0.005) * 0.3;
+                    ctx.translate(sx, sy); if (this.type === 'boss') { let bossY = this.floatY;
+                        ctx.translate(0, bossY); let glowIntensity = 0.5 + Math.sin(performance.now() * 0.005) * 0.3;
                         ctx.fillStyle = `rgba(255, 100, 0, ${glowIntensity})`;
                         ctx.beginPath();
                         ctx.arc(0, -this.r - 15, this.r * 1.2, 0, Math.PI * 2);
@@ -964,20 +1092,14 @@
                         ctx.lineWidth = 3;
                         ctx.beginPath();
                         ctx.arc(0, -this.r - 20, 15, 0, Math.PI * 2);
-                        ctx.stroke();
-                        for (let i = 0; i < 8; i++) {
-                            let angle = (i / 8) * Math.PI * 2 + performance.now() * 0.002;
-                            let spikeX = Math.cos(angle) * 16;
-                            let spikeY = Math.sin(angle) * 16 - this.r - 20;
+                        ctx.stroke(); for (let i = 0; i < 8; i++) { let angle = (i / 8) * Math.PI * 2 + performance.now() *
+                                0.002; let spikeX = Math.cos(angle) * 16,
+                                spikeY = Math.sin(angle) * 16 - this.r - 20;
                             ctx.fillStyle = '#ff6600';
-                            ctx.fillRect(spikeX - 1, spikeY - 4, 2, 8);
-                        }
+                            ctx.fillRect(spikeX - 1, spikeY - 4, 2, 8); }
                         ctx.fillStyle = '#333';
                         ctx.fillRect(15, -15, 25, 10);
-                        ctx.fillStyle = '#555';
-                        for (let i = 0; i < 4; i++) {
-                            ctx.fillRect(20 + i * 4, -18, 3, 4);
-                        }
+                        ctx.fillStyle = '#555'; for (let i = 0; i < 4; i++) { ctx.fillRect(20 + i * 4, -18, 3, 4); }
                         ctx.fillStyle = '#ffd700';
                         ctx.fillRect(18, -16, 2, 2);
                         ctx.fillRect(28, -16, 2, 2);
@@ -1004,9 +1126,9 @@
                         ctx.fillRect(-3, -2, 6, 6);
                         ctx.fillStyle = '#ffd700';
                         ctx.fillRect(-1, -4, 2, 10);
-                        ctx.fillRect(-3, 2, 6, 2);
-                    } else if (this.type === 'saw' || this.type === 'pistol' || this.type === 'minigun') { let scared =
-                            (this.type !== 'turret' && this.type !== 'boss' && this.stunT > 0);
+                        ctx.fillRect(-3, 2, 6, 2); } else if (this.type === 'saw' || this.type === 'pistol' || this
+                        .type === 'minigun') { let scared = (this.type !== 'turret' && this.type !== 'boss' && this
+                            .stunT > 0);
                         ctx.fillStyle = '#d4a574';
                         ctx.fillRect(-8, -4, 16, 12);
                         ctx.fillStyle = '#2c2c2c';
@@ -1127,10 +1249,10 @@
                 blood = [],
                 organs = [],
                 thrown = [],
-                thrownObjects = [], // новый массив для брошенных предметов
+                thrownObjects = [],
                 fires = [],
                 obstacles = [],
-                corpses = []; // массив трупов
+                corpses = [];
             let waveNum = 1,
                 waveLeft = 0,
                 wavePause = 0,
@@ -1141,7 +1263,7 @@
                 corrIdx = 0;
             const corrTexts = ['Они заслужили боль.', 'Ты не сможешь остановиться.', 'Убей их всех. Разорви.',
                 'Тишина это слабость.', 'Кровь очищает.', 'Иди вперёд. Там твоя сцена.', 'Маска скрывает правду.',
-                'Часы тикают. Тик так.', 'Гильзы в ботинке... неприятно.', 'Слушай голос внутри.' // убрали "Ты — Илерт?"
+                'Часы тикают. Тик так.', 'Гильзы в ботинке... неприятно.', 'Слушай голос внутри.'
             ];
             const secretPhrase = 'Ты — Илерт?';
             let wW = CORR_W,
@@ -1259,70 +1381,40 @@
                                 Particle(e.x, e.y, Math.random() * Math.PI * 2, 60, '#aaa', 0.3));
                         if (e.type === 'turret') player.threwOrganAtTurret = true;
                         unlockAch('machine_no_fear'); } break; } } }
-                // Брошенные предметы (декор/трупы)
                 for (let obj of thrownObjects) { if (!obj.alive) continue; for (let e of enemies) { if (!e.alive) continue; if (Math.hypot(obj.x - e.x, obj.y - e.y) < e.r + obj.r) { obj.alive = false;
                             e.takeDmg(obj.damage, player, parts, 'object');
-                            e.stunT = 0.8; // оглушение
-                            for (let i = 0; i < 5; i++) parts.push(new Particle(e.x, e.y, Math.random()*Math.PI*2, 80, '#8B7355', 0.5));
-                            break; } } }
+                            e.stunT = 0.8; for (let i = 0; i < 5; i++) parts.push(new Particle(e.x, e.y, Math.random() * Math
+                                    .PI * 2, 80, '#8B7355', 0.5)); break; } } }
                 for (let i = organs.length - 1; i >= 0; i--) { let o =
                         organs[i]; if (o.life > 0 && Math.hypot(o.x - player.x, o.y - player.y) < 20) { player.organs++;
                         organs.splice(i, 1); } }
-                // обыск трупов (U)
-                if (keys['u'] && corpses.length > 0) {
-                    for (let i = corpses.length-1; i >= 0; i--) {
-                        let c = corpses[i];
-                        if (!c.looted && Math.hypot(c.x - player.x, c.y - player.y) < 40) {
-                            if (Math.random() < LOOT_CHANCE) {
-                                let types = ['eye','brain','skull','guts','trachea'];
-                                let t = types[Math.floor(Math.random()*types.length)];
-                                organs.push(new Organ(c.x + (Math.random()-0.5)*20, c.y + (Math.random()-0.5)*20, t));
-                                addNotification('Орган из трупа', '🫀');
-                            } else {
-                                addNotification('Пусто', '🦴');
-                            }
-                            c.looted = true;
-                            corpses.splice(i,1); // труп исчезает после обыска
-                            break;
-                        }
-                    }
-                    keys['u'] = false;
-                }
-                // подбор декора/трупов на Q
-                if (keys['q'] && !player.holdingObject) {
-                    // сначала ищем ближайший труп (не разграбленный)
-                    let nearestCorpse = null;
-                    let minDist = 50;
-                    for (let c of corpses) {
-                        let d = Math.hypot(c.x - player.x, c.y - player.y);
-                        if (d < minDist && !c.looted) { minDist = d; nearestCorpse = c; }
-                    }
-                    if (nearestCorpse) {
-                        player.holdingObject = { type: 'corpse' };
-                        corpses.splice(corpses.indexOf(nearestCorpse),1);
-                        keys['q'] = false;
-                    } else {
-                        // ищем препятствие
-                        for (let i = obstacles.length-1; i >= 0; i--) {
-                            let o = obstacles[i];
-                            let cx = o.x + o.w/2, cy = o.y + o.h/2;
-                            if (Math.hypot(cx - player.x, cy - player.y) < 50) {
-                                player.holdingObject = { type: 'box' };
-                                obstacles.splice(i,1);
-                                keys['q'] = false;
-                                break;
-                            }
-                        }
-                    }
-                }
+                if (keys['u'] && corpses.length > 0) { for (let i = corpses.length - 1; i >= 0; i--) { let c = corpses[
+                        i]; if (!c.looted && Math.hypot(c.x - player.x, c.y - player.y) < 40) { if (Math.random() <
+                            LOOT_CHANCE) { let types = ['eye', 'brain', 'skull', 'guts', 'trachea'];
+                            let t = types[Math.floor(Math.random() * types.length)];
+                            organs.push(new Organ(c.x + (Math.random() - 0.5) * 20, c.y + (Math.random() - 0.5) * 20,
+                            t));
+                            addNotification('Орган из трупа', '🫀'); } else { addNotification('Пусто', '🦴'); }
+                        c.looted = true;
+                        corpses.splice(i, 1); break; } }
+                    keys['u'] = false; }
+                if (keys['q'] && !player.holdingObject) { let nearestCorpse = null; let minDist = 50; for (let c of
+                        corpses) { let d = Math.hypot(c.x - player.x, c.y - player.y); if (d < minDist && !c.looted) { minDist =
+                                d;
+                            nearestCorpse = c; } } if (nearestCorpse) { player.holdingObject = { type: 'corpse' };
+                        corpses.splice(corpses.indexOf(nearestCorpse), 1);
+                        keys['q'] = false; } else { for (let i = obstacles.length - 1; i >= 0; i--) { let o = obstacles[
+                                i]; let cx = o.x + o.w / 2,
+                                cy = o.y + o.h / 2; if (Math.hypot(cx - player.x, cy - player.y) < 50) { player
+                                    .holdingObject = { type: 'box' };
+                                obstacles.splice(i, 1);
+                                keys['q'] = false; break; } } } }
                 for (let e of enemies) e.burn(fires);
-                // трупы с истекшим временем удаляются
-                corpses = corpses.filter(c => c.life > 0);
-            }
+                corpses = corpses.filter(c => c.life > 0); }
 
             function upHi() { let hs = hiScore[diff]; if (gameScore > hs.s) hs.s = Math.floor(gameScore); if (waveNum >
                     hs.w) hs.w = waveNum;
-            localStorage.setItem('alert_hi', JSON.stringify(hiScore)); }
+                updateCurrentUserScore(); }
 
             function drawMadIcon(ctx, x, y, lvl) { ctx.fillStyle = '#f0d0a0';
                 ctx.fillRect(x, y, 16, 16); if (lvl <= 1) { ctx.fillStyle = '#000';
@@ -1359,34 +1451,87 @@
                 ctx.fillText(txt, cx, cy + 5);
                 ctx.textAlign = 'left'; }
 
+            function drawLogin() {
+                ctx.fillStyle = 'rgba(0,0,0,0.9)';
+                ctx.fillRect(0, 0, VW, VH);
+                ctx.fillStyle = '#c00';
+                ctx.font = 'bold 48px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('ALERT', VW / 2, 120);
+                ctx.fillStyle = '#ccc';
+                ctx.font = '18px monospace';
+                ctx.fillText(loginMode === 'login' ? 'ВХОД' : 'РЕГИСТРАЦИЯ', VW / 2, 170);
+                // Поле ника
+                let fieldY = 220;
+                ctx.fillStyle = '#222';
+                ctx.fillRect(VW / 2 - 150, fieldY, 300, 40);
+                ctx.strokeStyle = activeLoginField === 0 ? '#f00' : '#555';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(VW / 2 - 150, fieldY, 300, 40);
+                ctx.fillStyle = '#fff';
+                ctx.font = '20px monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText('Ник: ' + loginUsername + (activeLoginField === 0 ? '|' : ''), VW / 2 - 140, fieldY + 28);
+                // Поле пароля
+                fieldY = 280;
+                ctx.fillStyle = '#222';
+                ctx.fillRect(VW / 2 - 150, fieldY, 300, 40);
+                ctx.strokeStyle = activeLoginField === 1 ? '#f00' : '#555';
+                ctx.strokeRect(VW / 2 - 150, fieldY, 300, 40);
+                ctx.fillStyle = '#fff';
+                ctx.fillText('Пароль: ' + '*'.repeat(loginPassword.length) + (activeLoginField === 1 ? '|' : ''), VW / 2 -
+                    140, fieldY + 28);
+                if (loginError) {
+                    ctx.fillStyle = '#f44';
+                    ctx.font = '14px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(loginError, VW / 2, 340);
+                }
+                ctx.textAlign = 'center';
+                // Кнопка Войти / Зарегистрироваться
+                let btnY = 380;
+                drawBtn(VW / 2, btnY, 200, 40, loginMode === 'login' ? 'ВОЙТИ' : 'ЗАРЕГИСТРИРОВАТЬСЯ', '#800', '#c00',
+                    '#fff');
+                // Переключение режима
+                drawBtn(VW / 2, btnY + 50, 200, 40, loginMode === 'login' ? 'Нет аккаунта?' : 'Есть аккаунт?', '#333',
+                    '#666', '#ccc');
+                return { loginBtn: { x: VW / 2 - 100, y: btnY - 20, w: 200, h: 40 }, modeBtn: { x: VW / 2 - 100, y: btnY +
+                        30, w: 200, h: 40 } };
+            }
+
             function drawMenu() { ctx.fillStyle = 'rgba(0,0,0,0.85)';
                 ctx.fillRect(0, 0, VW, VH);
                 ctx.fillStyle = '#c00';
                 ctx.font = 'bold 72px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText('ALERT', VW / 2, 160); let hs = hiScore[diff];
+                ctx.fillText('ALERT', VW / 2, 120); if (currentUser) { ctx.fillStyle = '#fc0';
+                    ctx.font = '18px monospace';
+                    ctx.fillText(`Игрок: ${currentUser.username}`, VW / 2, 150); } let hs = hiScore[diff];
                 ctx.fillStyle = '#fc0';
                 ctx.font = '14px monospace';
-                ctx.fillText(`Рекорд: ${hs.s} очк. | Волна ${hs.w}`, VW / 2, 185);
+                ctx.fillText(`Рекорд: ${hs.s} очк. | Волна ${hs.w}`, VW / 2, 175);
                 ctx.fillStyle = '#999';
-                ctx.fillText('Гомицидомания не лечится', VW / 2, 215);
+                ctx.fillText('Гомицидомания не лечится', VW / 2, 205);
                 ctx.fillStyle = '#fc0';
                 ctx.font = '16px monospace';
-                ctx.fillText('⚠ ИГРА ТОЛЬКО С АНГЛИЙСКОЙ РАСКЛАДКОЙ ⚠', VW / 2, 245); let bx = VW / 2,
+                ctx.fillText('⚠ ИГРА ТОЛЬКО С АНГЛИЙСКОЙ РАСКЛАДКОЙ ⚠', VW / 2, 230); let bx = VW / 2,
                     bw = 220,
                     bh = 42,
-                    sy = 300;
+                    sy = 270;
                 drawBtn(bx, sy, bw, bh, 'ИГРАТЬ', '#800', '#c00', '#fff');
                 drawBtn(bx, sy + 55, bw, bh, 'КАК ИГРАТЬ', '#333', '#666', '#ccc');
                 drawBtn(bx, sy + 110, bw, bh, `СЛОЖНОСТЬ: ${diff.toUpperCase()}`, '#222', '#444', '#aaa');
                 drawBtn(bx, sy + 165, bw, bh, 'ДОСТИЖЕНИЯ', '#222', '#666', '#ccc');
+                drawBtn(bx, sy + 220, bw, bh, 'ТАБЛИЦА РЕКОРДОВ', '#222', '#666', '#ccc'); if (currentUser) { drawBtn(
+                        bx, sy + 275, bw, bh, `ВЫЙТИ (${currentUser.username})`, '#333', '#666', '#ccc'); }
                 ctx.fillStyle = '#777';
                 ctx.font = '10px monospace';
-                ctx.textAlign = 'center';
-                ctx.fillText('Кликните на сложность для смены', VW / 2, sy + 210); return { play: { x: bx - bw / 2,
-                        y: sy - bh / 2, w: bw, h: bh }, how: { x: bx - bw / 2, y: sy + 55 - bh / 2, w: bw,
-                        h: bh }, diff: { x: bx - bw / 2, y: sy + 110 - bh / 2, w: bw, h: bh }, ach: { x: bx -
-                        bw / 2, y: sy + 165 - bh / 2, w: bw, h: bh } }; }
+                ctx.fillText('Кликните на сложность для смены', VW / 2, sy + 310); return { play: { x: bx - bw / 2, y: sy -
+                        bh / 2, w: bw, h: bh }, how: { x: bx - bw / 2, y: sy + 55 - bh / 2, w: bw, h: bh },
+                    diff: { x: bx - bw / 2, y: sy + 110 - bh / 2, w: bw, h: bh }, ach: { x: bx - bw / 2, y: sy +
+                        165 - bh / 2, w: bw, h: bh }, leaderboard: { x: bx - bw / 2, y: sy + 220 - bh / 2,
+                        w: bw, h: bh }, logout: currentUser ? { x: bx - bw / 2, y: sy + 275 - bh / 2, w: bw,
+                        h: bh } : null }; }
 
             function drawHowTo() { ctx.fillStyle = 'rgba(0,0,0,0.9)';
                 ctx.fillRect(0, 0, VW, VH);
@@ -1418,17 +1563,46 @@
                 drawBtn(VW / 2, VH - 50, 200, 40, 'В МЕНЮ', '#333', '#666', '#ccc'); return { back: { x: VW / 2 -
                         100, y: VH - 70, w: 200, h: 40 } }; }
 
+            function drawLeaderboard() {
+                ctx.fillStyle = 'rgba(0,0,0,0.9)';
+                ctx.fillRect(0, 0, VW, VH);
+                ctx.fillStyle = '#ff0';
+                ctx.font = 'bold 28px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('ТАБЛИЦА РЕКОРДОВ', VW / 2, 40);
+                const list = getLeaderboard();
+                if (list.length === 0) {
+                    ctx.fillStyle = '#aaa';
+                    ctx.font = '16px monospace';
+                    ctx.fillText('Пока нет рекордов', VW / 2, 200);
+                } else {
+                    ctx.font = '14px monospace';
+                    let y = 80;
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText('#  Игрок            Очки     Волна   Сложность', VW / 2, y);
+                    y += 20;
+                    list.forEach((entry, i) => {
+                        if (i >= 10) return;
+                        let color = '#ccc';
+                        if (currentUser && entry.username === currentUser.username) color = '#ff0';
+                        ctx.fillStyle = color;
+                        ctx.fillText(
+                            `${(i+1).toString().padStart(2)}  ${entry.username.padEnd(15)} ${entry.score.toString().padStart(8)} ${entry.wave.toString().padStart(6)}   ${entry.diff}`,
+                            VW / 2, y);
+                        y += 22;
+                    });
+                }
+                drawBtn(VW / 2, VH - 50, 200, 40, 'В МЕНЮ', '#333', '#666', '#ccc');
+                return { back: { x: VW / 2 - 100, y: VH - 70, w: 200, h: 40 } };
+            }
+
             function drawCorrText() { if (curWorld !== 'corridor') return;
                 ctx.fillStyle = 'rgba(255,255,255,0.5)';
                 ctx.font = 'italic 22px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText(corrTexts[corrIdx], VW / 2, VH / 2 + 60);
-                // секретная фраза при активации
-                if (secretShown) {
-                    ctx.fillStyle = '#f00';
+                ctx.fillText(corrTexts[corrIdx], VW / 2, VH / 2 + 60); if (secretShown) { ctx.fillStyle = '#f00';
                     ctx.font = 'bold 28px monospace';
-                    ctx.fillText(secretPhrase, VW / 2, VH / 2 + 100);
-                } }
+                    ctx.fillText(secretPhrase, VW / 2, VH / 2 + 100); } }
 
             function drawDeath() { ctx.fillStyle = 'rgba(0,0,0,0.9)';
                 ctx.fillRect(0, 0, VW, VH);
@@ -1512,11 +1686,10 @@
                     `ЯРОСТНЫЙ x${player.madMult.toFixed(1)}` : ''; if (mult) { ctx.fillStyle = '#f60';
                     ctx.fillText(mult, hx, sy + 16); } if (player.styleTxt) { ctx.fillStyle = '#f00';
                     ctx.font = 'bold 14px monospace';
-                    ctx.fillText(player.styleTxt, hx, sy + 32); } let wy = sy + 50;
-                if (player.holdingObject) {
-                    ctx.fillStyle = '#0ff';
-                    ctx.fillText(`ДЕРЖИТ: ${player.holdingObject.type==='corpse'?'ТРУП':'КОРОБКА'} [Q]`, hx, wy);
-                } else if (player.weapon === 'stick') { ctx.fillStyle = '#fc0';
+                    ctx.fillText(player.styleTxt, hx, sy + 32); } let wy = sy + 50; if (player.holdingObject) { ctx
+                    .fillStyle = '#0ff';
+                    ctx.fillText(`ДЕРЖИТ: ${player.holdingObject.type==='corpse'?'ТРУП':'КОРОБКА'} [Q]`, hx,
+                wy); } else if (player.weapon === 'stick') { ctx.fillStyle = '#fc0';
                     ctx.fillText('🏒 КЛЮШКА [1]', hx, wy); } else { ctx.fillStyle = '#fa0';
                     ctx.fillText(`🔫 DEAGLE [2] (${player.deagleLoaded?1:0})`, hx, wy); if (player.deagleReload) ctx
                         .fillText('ПЕРЕЗАРЯДКА...', hx + 180, wy); } let cy = wy + 18;
@@ -1542,10 +1715,26 @@
                 howBtns = null,
                 deathBtns = null,
                 pauseBtns = null,
-                achBtns = null;
-            canvas.addEventListener('click', e => { initAudio(); let m = getMouse(e); if (paused && pauseBtns) { if (
-                        isIn(m, pauseBtns.resume)) paused = false; else if (isIn(m, pauseBtns.quit)) { paused =
-                        false;
+                achBtns = null,
+                leaderboardBtns = null,
+                loginBtns = null;
+            canvas.addEventListener('click', e => { initAudio(); let m = getMouse(e); if (state === STATE.LOGIN &&
+                    loginBtns) { if (isIn(m, loginBtns.loginBtn)) { if (loginMode === 'login') { const user = loginUser(
+                            loginUsername, loginPassword); if (user) { currentUser = user;
+                            hiScore = { ...user.highScores };
+                            saveSession();
+                            state = STATE.MENU;
+                            loginError = ''; } else loginError = 'Неверный ник или пароль'; } else { if (loginUsername
+                            .length < 3) loginError = 'Ник минимум 3 символа'; else if (loginPassword.length <
+                        1) loginError = 'Введите пароль'; else if (registerUser(loginUsername, loginPassword)) {
+                            currentUser = findUser(loginUsername);
+                            hiScore = { ...currentUser.highScores };
+                            saveSession();
+                            state = STATE.MENU;
+                            loginError = ''; } else loginError = 'Пользователь уже существует'; } } else if (isIn(m,
+                        loginBtns.modeBtn)) { loginMode = loginMode === 'login' ? 'register' : 'login';
+                    loginError = ''; } return; } if (paused && pauseBtns) { if (isIn(m, pauseBtns.resume)) paused =
+                    false; else if (isIn(m, pauseBtns.quit)) { paused = false;
                     state = STATE.MENU;
                     enemies = [];
                     bullets = [];
@@ -1556,13 +1745,21 @@
                     thrownObjects = [];
                     fires = [];
                     obstacles = [];
-                    corpses = []; } return; } if (state === STATE.MENU && menuBtns) { if (isIn(m, menuBtns
-                        .play)) { resetGame();
-                    state = STATE.CORR; } else if (isIn(m, menuBtns.how)) state = STATE.HOWTO; else if (isIn(m,
-                        menuBtns.diff)) { let d = ['easy', 'medium', 'hard', 'insane'];
-                    diff = d[(d.indexOf(diff) + 1) % d.length]; } else if (isIn(m, menuBtns.ach)) state = STATE
-                    .ACH; } else if (state === STATE.HOWTO && howBtns && isIn(m, howBtns.back)) state = STATE
-                .MENU; else if (state === STATE.DEAD && deathBtns) { if (isIn(m, deathBtns.retry)) { resetGame();
+                    corpses = []; } return; } if (state === STATE.MENU && menuBtns) { if (isIn(m, menuBtns.play)) {
+                    resetGame();
+                    state = STATE.CORR; } else if (isIn(m, menuBtns.how)) state = STATE.HOWTO; else if (isIn(m, menuBtns
+                        .diff)) { let d = ['easy', 'medium', 'hard', 'insane'];
+                    diff = d[(d.indexOf(diff) + 1) % d.length]; } else if (isIn(m, menuBtns.ach)) state = STATE.ACH;
+                    else if (isIn(m, menuBtns.leaderboard)) state = STATE.LEADERBOARD; else if (menuBtns.logout && isIn(
+                        m, menuBtns.logout)) { currentUser = null;
+                    hiScore = { easy: { s: 0, w: 0 }, medium: { s: 0, w: 0 }, hard: { s: 0, w: 0 }, insane: { s: 0,
+                            w: 0 } };
+                    saveSession();
+                    state = STATE.LOGIN;
+                    loginUsername = '';
+                    loginPassword = '';
+                    loginError = ''; } } else if (state === STATE.HOWTO && howBtns && isIn(m, howBtns.back)) state =
+                STATE.MENU; else if (state === STATE.DEAD && deathBtns) { if (isIn(m, deathBtns.retry)) { resetGame();
                     state = STATE.CORR; } else if (isIn(m, deathBtns.menu)) { state = STATE.MENU;
                     enemies = [];
                     bullets = [];
@@ -1573,8 +1770,9 @@
                     thrownObjects = [];
                     fires = [];
                     obstacles = [];
-                    corpses = []; } } else if (state === STATE.ACH && achBtns && isIn(m, achBtns.back))
-            state = STATE.MENU; });
+                    corpses = []; } } else if (state === STATE.ACH && achBtns && isIn(m, achBtns.back)) state = STATE
+                .MENU; else if (state === STATE.LEADERBOARD && leaderboardBtns && isIn(m, leaderboardBtns.back)) state =
+                STATE.MENU; });
 
             function isIn(m, r) { return m.x >= r.x && m.x <= r.x + r.w && m.y >= r.y && m.y <= r.y + r.h; }
 
@@ -1600,26 +1798,35 @@
                         adState.alpha = 1 - p; } else { adState = null; } } for (let i = notifications.length - 1; i >=
                     0; i--) { let n = notifications[i];
                     n.timer -= dt; if (n.timer > 2.5) n.y += (80 - n.y) * 10 * dt; else n.alpha -= dt * 2; if (n
-                        .timer <= 0 || n.alpha < 0) notifications.splice(i, 1); }
-                // Секретная комбинация Space + B
-                if (keys[' '] && keys['b'] && !secretShown) {
+                        .timer <= 0 || n.alpha < 0) notifications.splice(i, 1); } if (keys[' '] && keys['b'] && !secretShown) {
                     secretShown = true;
-                    addNotification(secretPhrase, '💀');
-                }
-                if (state === STATE.MENU) {
-                    menuBtns = drawMenu();
-                    howBtns = null;
-                    deathBtns = null;
-                    pauseBtns = null;
-                    achBtns = null; } else if (state === STATE.HOWTO) { howBtns = drawHowTo();
-                    menuBtns = null;
-                    deathBtns = null;
-                    pauseBtns = null;
-                    achBtns = null; } else if (state === STATE.ACH) { achBtns = drawAchScreen();
+                    addNotification(secretPhrase, '💀'); } if (state === STATE.LOGIN) { loginBtns = drawLogin();
                     menuBtns = null;
                     howBtns = null;
                     deathBtns = null;
-                    pauseBtns = null; } else if (state === STATE.CORR) { if (!paused) { player.x += 250 * dt;
+                    pauseBtns = null;
+                    achBtns = null;
+                    leaderboardBtns = null; } else if (state === STATE.MENU) { menuBtns = drawMenu();
+                    howBtns = null;
+                    deathBtns = null;
+                    pauseBtns = null;
+                    achBtns = null;
+                    leaderboardBtns = null; } else if (state === STATE.HOWTO) { howBtns = drawHowTo();
+                    menuBtns = null;
+                    deathBtns = null;
+                    pauseBtns = null;
+                    achBtns = null;
+                    leaderboardBtns = null; } else if (state === STATE.ACH) { achBtns = drawAchScreen();
+                    menuBtns = null;
+                    howBtns = null;
+                    deathBtns = null;
+                    pauseBtns = null;
+                    leaderboardBtns = null; } else if (state === STATE.LEADERBOARD) { leaderboardBtns = drawLeaderboard();
+                    menuBtns = null;
+                    howBtns = null;
+                    deathBtns = null;
+                    pauseBtns = null;
+                    achBtns = null; } else if (state === STATE.CORR) { if (!paused) { player.x += 250 * dt;
                         corrProg = player.x / (CORR_W - 200); if (corrProg > 1) corrProg = 1;
                         corrT += dt; if (corrT > 2.5) { corrT = 0;
                             corrIdx = (corrIdx + 1) % corrTexts.length; } }
@@ -1674,14 +1881,10 @@
                         organs = organs.filter(o => o.life > 0);
                         thrown = thrown.filter(t => t.alive);
                         thrownObjects = thrownObjects.filter(obj => obj.alive);
-                        fires = fires.filter(f => f.life > 0);
-                        // добавление трупов при смерти врагов (кроме боссов и турелей)
-                        for (let e of enemies) {
-                            if (!e.alive && e.type !== 'boss' && e.type !== 'turret' && !e._corpseCreated) {
-                                corpses.push(new Corpse(e.x, e.y, e.type));
-                                e._corpseCreated = true; // метка, чтобы не дублировать
-                            }
-                        }
+                        fires = fires.filter(f => f.life > 0); for (let e of enemies) { if (!e.alive && e.type !== 'boss' &&
+                                e.type !== 'turret' && !e._corpseCreated) { corpses.push(new Corpse(e.x, e.y, e
+                                .type));
+                                e._corpseCreated = true; } }
                         checkColl();
                         enemies = enemies.filter(e => e.alive);
                         bullets = bullets.filter(b => b.alive);
