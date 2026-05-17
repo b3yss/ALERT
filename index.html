@@ -92,15 +92,14 @@
             const FIRE_LIFE = 16,
                 FIRE_DMG_INT = 0.5,
                 TURRET_RANGE = 350;
-            const CORPSE_LIFETIME = 120; // труп живёт 60 секунд
-            const LOOT_CHANCE = 1.2;    // шанс найти орган в трупе
+            const CORPSE_LIFETIME = 120;
+            const LOOT_CHANCE = 1.2;
 
             // ДОСТИЖЕНИЯ
             const ACHIEVEMENTS = [
                 { id: 'parasite', name: 'Паразит', desc: 'Хил от рая 13 волн подряд', icon: '🪽' },
                 { id: 'forgot', name: 'WASTED', desc: 'Умереть первый раз', icon: '☠️' },
-                { id: 'machine_no_fear', name: 'Машина не чувствует страха', desc: 'Кинуть орган в турель',
-                icon: '👁️' },
+                { id: 'machine_no_fear', name: 'Машина не чувствует страха', desc: 'Кинуть орган в турель', icon: '👁️' },
                 { id: 'psycho', name: 'Псих', desc: 'Собрать 40 органов за раз', icon: '🧠' },
                 { id: 'pyro', name: 'Пиро', desc: 'Сжечь врага', icon: '🔥' },
                 { id: 'tsunami', name: 'Цунами', desc: 'Выжить 30 волн', icon: '🌊' },
@@ -110,21 +109,17 @@
                 { id: 'wave10', name: 'Ветеран', desc: 'Дойти до 10 волны', icon: '🌊' }
             ];
             let unlockedAch = {};
-            try { const saved = localStorage.getItem('alert_ach'); if (saved) unlockedAch = JSON.parse(saved); } catch (
-                e) {}
+            try { const saved = localStorage.getItem('alert_ach'); if (saved) unlockedAch = JSON.parse(saved); } catch (e) {}
 
-            function unlockAch(id) { if (unlockedAch[id]) return; const ach = ACHIEVEMENTS.find(a => a.id ===
-                id); if (!ach) return;
-            unlockedAch[id] = true;
-            localStorage.setItem('alert_ach', JSON.stringify(unlockedAch));
-            addNotification(ach.name, ach.icon); }
+            function unlockAch(id) { if (unlockedAch[id]) return; const ach = ACHIEVEMENTS.find(a => a.id === id); if (!ach) return;
+                unlockedAch[id] = true;
+                localStorage.setItem('alert_ach', JSON.stringify(unlockedAch));
+                addNotification(ach.name, ach.icon); }
             let notifications = [];
 
-            function addNotification(text, icon) { notifications.push({ text, icon, timer: 3.0, y: -60,
-            alpha: 1 }); }
+            function addNotification(text, icon) { notifications.push({ text, icon, timer: 3.0, y: -60, alpha: 1 }); }
 
-            function madnessLevel(s) { if (s < 15000) return { n: 'Садист', l: 0 }; if (s < 40000) return { n: 'Хитман',
-                    l: 1 }; if (s < 100000) return { n: 'Киллер', l: 2 }; return { n: 'АБСОЛЬТНЫЙ МОНСТР', l: 3 }; }
+            function madnessLevel(s) { if (s < 15000) return { n: 'Садист', l: 0 }; if (s < 40000) return { n: 'Хитман', l: 1 }; if (s < 100000) return { n: 'Киллер', l: 2 }; return { n: 'АБСОЛЬТНЫЙ МОНСТР', l: 3 }; }
 
             let adState = null,
                 lastMad = 0;
@@ -133,21 +128,17 @@
             const adDown = new Image();
             adDown.src = 'https://i.pinimg.com/originals/a9/e8/37/a9e837bbe66e316a8d325bb4e15718e3.gif';
 
-            function ad(type) { adState = { type, timer: 0, img: type === 'up' ? adUp : adDown, x: -400, y: VH -
-                    200, alpha: 0, dur: 6 }; }
+            function ad(type) { adState = { type, timer: 0, img: type === 'up' ? adUp : adDown, x: -400, y: VH - 200, alpha: 0, dur: 6 }; }
 
             let audioCtx = null;
 
-            function initAudio() { if (!audioCtx) audioCtx = new(window.AudioContext || window.webkitAudioContext)(); if (
-                    audioCtx.state === 'suspended') audioCtx.resume(); }
+            function initAudio() { if (!audioCtx) audioCtx = new(window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
 
-            function bip(f, d, t = 'square', v = 0.08, fo = true) { if (!audioCtx) return; try { let o = audioCtx
-                    .createOscillator(),
+            function bip(f, d, t = 'square', v = 0.08, fo = true) { if (!audioCtx) return; try { let o = audioCtx.createOscillator(),
                     g = audioCtx.createGain();
                 o.type = t;
                 o.frequency.setValueAtTime(f, audioCtx.currentTime);
-                g.gain.setValueAtTime(v, audioCtx.currentTime); if (fo) g.gain.exponentialRampToValueAtTime(0.001,
-                    audioCtx.currentTime + d);
+                g.gain.setValueAtTime(v, audioCtx.currentTime); if (fo) g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + d);
                 o.connect(g);
                 g.connect(audioCtx.destination);
                 o.start();
@@ -163,7 +154,7 @@
                 bip(100, 0.1, 'triangle', 0.04) }
 
             function brutalStickSnd() { bip(200, 0.2, 'sawtooth', 0.2);
-                bip(80, 0.3, 'square', 0.15) } // новый звук жёсткого удара
+                bip(80, 0.3, 'square', 0.15) }
 
             function deathSnd() { bip(60, 0.2, 'sawtooth', 0.1);
                 bip(30, 0.3, 'square', 0.08) }
@@ -195,19 +186,23 @@
                 bip(82, 0.6, 'triangle', 0.1);
                 bip(110, 0.7, 'sine', 0.08); }
 
-            const STATE = { MENU: 'menu', HOWTO: 'howto', CORR: 'corridor', PLAY: 'playing', DEAD: 'dead',
-                ACH: 'achievements' };
+            // === ЗВУК ДЛЯ ФРАЗ ГЕРОЯ ===
+            function phraseSfx() {
+                if (!audioCtx) return;
+                // искажённый "голосовой" звук — быстрые колебания частоты
+                bip(250, 0.25, 'square', 0.12);
+                bip(180, 0.3, 'sawtooth', 0.08);
+            }
+
+            const STATE = { MENU: 'menu', HOWTO: 'howto', CORR: 'corridor', PLAY: 'playing', DEAD: 'dead', ACH: 'achievements' };
             let state = STATE.MENU,
                 paused = false,
                 layoutW = 0,
                 diff = 'medium';
-            let diffSet = { easy: { hpM: 0.7, spM: 0.8, spawnM: 0.6, waveA: 0.7 }, medium: { hpM: 1.0, spM: 1.0,
-                    spawnM: 1.0, waveA: 1.0 }, hard: { hpM: 1.4, spM: 1.25, spawnM: 1.4, waveA: 1.3 },
+            let diffSet = { easy: { hpM: 0.7, spM: 0.8, spawnM: 0.6, waveA: 0.7 }, medium: { hpM: 1.0, spM: 1.0, spawnM: 1.0, waveA: 1.0 }, hard: { hpM: 1.4, spM: 1.25, spawnM: 1.4, waveA: 1.3 },
                 insane: { hpM: 2.0, spM: 1.6, spawnM: 2.0, waveA: 1.7 } };
-            let hiScore = { easy: { s: 0, w: 0 }, medium: { s: 0, w: 0 }, hard: { s: 0, w: 0 }, insane: { s: 0,
-                w: 0 } };
-            try { let s = localStorage.getItem('alert_hi'); if (s) { let p = JSON.parse(s); for (let k of Object.keys(
-                        hiScore)) if (p[k]) hiScore[k] = p[k]; } } catch (e) {}
+            let hiScore = { easy: { s: 0, w: 0 }, medium: { s: 0, w: 0 }, hard: { s: 0, w: 0 }, insane: { s: 0, w: 0 } };
+            try { let s = localStorage.getItem('alert_hi'); if (s) { let p = JSON.parse(s); for (let k of Object.keys(hiScore)) if (p[k]) hiScore[k] = p[k]; } } catch (e) {}
 
             const keys = {};
             let mx = VW / 2,
@@ -221,14 +216,11 @@
             function updateRect() { canvasRect = canvas.getBoundingClientRect(); }
 
             function getMouse(e) { if (!canvasRect) updateRect();
-            let sx = VW / canvasRect.width,
-                sy = VH / canvasRect.height; return { x: (e.clientX - canvasRect.left) * sx, y: (e.clientY - canvasRect
-                        .top) * sy }; }
+                let sx = VW / canvasRect.width,
+                    sy = VH / canvasRect.height; return { x: (e.clientX - canvasRect.left) * sx, y: (e.clientY - canvasRect.top) * sy }; }
             document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true;
-                keys[e.code] = true; if (e.key === 'Escape') { if (state === STATE.PLAY || state === STATE.CORR)
-                    paused = !paused;
-                e.preventDefault(); } if (['k', 'r', '1', '2', 'shift', 'e', 'g', 'q', 'u'].includes(e.key.toLowerCase()) ||
-                    e.key === 'Shift') e.preventDefault(); if (/[а-яё]/i.test(e.key)) layoutW = 2.5; });
+                keys[e.code] = true; if (e.key === 'Escape') { if (state === STATE.PLAY || state === STATE.CORR) paused = !paused;
+                    e.preventDefault(); } if (['k', 'r', '1', '2', 'shift', 'e', 'g', 'q', 'u'].includes(e.key.toLowerCase()) || e.key === 'Shift') e.preventDefault(); if (/[а-яё]/i.test(e.key)) layoutW = 2.5; });
             document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false;
                 keys[e.code] = false; });
             canvas.addEventListener('mousemove', e => { let m = getMouse(e);
@@ -236,11 +228,9 @@
                 my = m.y;
                 mc = true; });
             canvas.addEventListener('mouseleave', () => mc = false);
-            canvas.addEventListener('mousedown', e => { initAudio(); if (e.button === 0) ml = true; if (e.button ===
-                    2) mr = true;
+            canvas.addEventListener('mousedown', e => { initAudio(); if (e.button === 0) ml = true; if (e.button === 2) mr = true;
                 e.preventDefault(); });
-            canvas.addEventListener('mouseup', e => { if (e.button === 0) ml = false; if (e.button === 2) mr =
-                false; });
+            canvas.addEventListener('mouseup', e => { if (e.button === 0) ml = false; if (e.button === 2) mr = false; });
             canvas.addEventListener('wheel', e => { mwDelta += e.deltaY;
                 e.preventDefault(); });
             canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -264,23 +254,58 @@
                 healFlash = 0,
                 redScreen = 0;
             let bossAppearTimer = 0;
-            let secretShown = false; // для секретной фразы
+            let secretShown = false;
 
             function upCam(px, py, wW, wH, dt) { cam.tx = px - VW / 2;
                 cam.ty = py - VH / 2;
                 cam.tx = Math.max(0, Math.min(cam.tx, wW - VW));
-                cam.ty = Math.max(0, Math.min(cam.ty, wH - VH)); if (wW <= VW) cam.tx = (wW - VW) / 2; if (wH <=
-                    VH) cam.ty = (wH - VH) / 2; let lerp = 8;
+                cam.ty = Math.max(0, Math.min(cam.ty, wH - VH)); if (wW <= VW) cam.tx = (wW - VW) / 2; if (wH <= VH) cam.ty = (wH - VH) / 2; let lerp = 8;
                 cam.x += (cam.tx - cam.x) * Math.min(1, lerp * dt);
                 cam.y += (cam.ty - cam.y) * Math.min(1, lerp * dt); }
 
             function toWorld(sx, sy) { return { x: sx + cam.x, y: sy + cam.y }; }
 
+            // === ПЕРКИ ===
+            const PERKS = [
+                { id: 'vampire', name: 'Вампиризм', desc: 'Восстанавливает 5 HP за убийство', apply(player) { player.vampireHeal = 5; }, icon: '🩸' },
+                { id: 'fastreload', name: 'Быстрая перезарядка', desc: 'Перезарядка Deagle на 40% быстрее', apply(player) { player.fastReload = true; }, icon: '⚡' },
+                { id: 'longdash', name: 'Дальний рывок', desc: 'Увеличивает дальность рывка', apply(player) { player.dashRangeMul = 1.5; }, icon: '💨' },
+                { id: 'firetrail', name: 'Огненный след', desc: 'Рывок оставляет за собой огонь', apply(player) { player.fireTrail = true; }, icon: '🔥' },
+                { id: 'doubleshot', name: 'Двойной выстрел', desc: '30% шанс выстрелить двумя пулями', apply(player) { player.doubleShot = true; }, icon: '🔫' }
+            ];
+            let playerPerks = [];        // активные перки игрока
+            let perkChoice = null;       // { options: [], active: true } во время выбора
+            let perkChoiceFlash = 0;     // вспышка при выборе
+
+            function showPerkChoice() {
+                // выбрать 3 случайных перка, которых ещё нет
+                let available = PERKS.filter(p => !playerPerks.some(pp => pp.id === p.id));
+                if (available.length === 0) return; // все перки собраны
+                // перемешиваем
+                let shuffled = [...available].sort(() => Math.random() - 0.5);
+                let options = shuffled.slice(0, 3);
+                perkChoice = { options, active: true };
+                paused = true; // ставим игру на паузу во время выбора
+            }
+
+            function applyPerk(perk) {
+                if (!player) return;
+                perk.apply(player);
+                playerPerks.push(perk);
+                perkChoice = null;
+                paused = false;
+                // визуальный эффект
+                perkChoiceFlash = 1.5;
+                addNotification(`Перк: ${perk.name}`, perk.icon);
+                // звук
+                angelSnd();
+            }
+
+            // === КЛАССЫ ===
             class Fire { constructor(x, y) { this.x = x;
                     this.y = y;
                     this.r = 20 + Math.random() * 10;
-                    this.life = FIRE_LIFE; } up(dt) { this.life -= dt; return this.life > 0; } draw(ctx, cx, cy) { let a =
-                        Math.min(1, this.life / 2);
+                    this.life = FIRE_LIFE; } up(dt) { this.life -= dt; return this.life > 0; } draw(ctx, cx, cy) { let a = Math.min(1, this.life / 2);
                     ctx.globalAlpha = a * 0.8;
                     ctx.fillStyle = '#ff6600';
                     ctx.beginPath();
@@ -296,8 +321,7 @@
                     this.r = r || 5 + Math.random() * 12;
                     this.a = 0.7 + Math.random() * 0.3;
                     this.life = 15 + Math.random() * 20;
-                    this.max = this.life; } up(dt) { this.life -= dt; return this.life > 0; } draw(ctx, cx, cy) { let a =
-                        Math.max(0, this.life / this.max) * this.a;
+                    this.max = this.life; } up(dt) { this.life -= dt; return this.life > 0; } draw(ctx, cx, cy) { let a = Math.max(0, this.life / this.max) * this.a;
                     ctx.fillStyle = `rgba(120,0,0,${a})`;
                     ctx.beginPath();
                     ctx.arc(this.x - cx, this.y - cy, this.r, 0, Math.PI * 2);
@@ -311,9 +335,7 @@
                     this.type = t;
                     this.r = t === 'brain' ? 6 : t === 'skull' ? 7 : t === 'guts' ? 5 : 4;
                     this.life = ORGAN_LIFE;
-                    this.color = t === 'brain' ? '#ff8888' : t === 'skull' ? '#ddd' : t === 'guts' ? '#cc5555' : t ===
-                        'trachea' ? '#ffaaaa' : '#ffffff'; } up(dt) { this.life -= dt; return this.life > 0; } draw(ctx,
-                    cx, cy) { if (this.life <= 0) return; let a = Math.min(1, this.life / 5);
+                    this.color = t === 'brain' ? '#ff8888' : t === 'skull' ? '#ddd' : t === 'guts' ? '#cc5555' : t === 'trachea' ? '#ffaaaa' : '#ffffff'; } up(dt) { this.life -= dt; return this.life > 0; } draw(ctx, cx, cy) { if (this.life <= 0) return; let a = Math.min(1, this.life / 5);
                     ctx.globalAlpha = a; if (this.type === 'brain') { ctx.fillStyle = this.color;
                         ctx.beginPath();
                         ctx.ellipse(this.x - cx, this.y - cy, this.r, this.r * 0.9, 0, 0, Math.PI * 2);
@@ -351,14 +373,11 @@
             class ThrownOrgan { constructor(x, y, angle, type) { this.x = x;
                     this.y = y;
                     this.angle = angle;
-                    this.speed = type === 'eye' ? EYE_SPD : type === 'skull' ? 900 : type === 'brain' ? 1000 :
-                    1100;
+                    this.speed = type === 'eye' ? EYE_SPD : type === 'skull' ? 900 : type === 'brain' ? 1000 : 1100;
                     this.r = 4;
                     this.alive = true;
                     this.type = type; } up(dt, wW, wH) { this.x += Math.cos(this.angle) * this.speed * dt;
-                    this.y += Math.sin(this.angle) * this.speed * dt; if (this.x < -50 || this.x > wW + 50 || this
-                        .y < -50 || this.y > wH + 50) this.alive = false; } draw(ctx, cx, cy) { if (!this.alive)
-                        return; let sx = this.x - cx,
+                    this.y += Math.sin(this.angle) * this.speed * dt; if (this.x < -50 || this.x > wW + 50 || this.y < -50 || this.y > wH + 50) this.alive = false; } draw(ctx, cx, cy) { if (!this.alive) return; let sx = this.x - cx,
                         sy = this.y - cy;
                     ctx.fillStyle = this.type === 'eye' ? '#fff' : this.type === 'skull' ? '#ddd' : '#cc5555';
                     ctx.beginPath();
@@ -367,29 +386,25 @@
                         ctx.beginPath();
                         ctx.arc(sx, sy, this.r - 3, 0, Math.PI * 2);
                         ctx.fill(); } } }
-            // Новый класс: брошенный объект (декор или труп)
             class ThrownObject { constructor(x, y, angle, type, damage) { this.x = x;
                     this.y = y;
                     this.angle = angle;
                     this.speed = 600;
                     this.r = 8;
                     this.alive = true;
-                    this.type = type; // 'box' или 'corpse'
+                    this.type = type;
                     this.damage = damage || 40; } up(dt, wW, wH) { this.x += Math.cos(this.angle) * this.speed * dt;
-                    this.y += Math.sin(this.angle) * this.speed * dt; if (this.x < -50 || this.x > wW + 50 || this
-                        .y < -50 || this.y > wH + 50) this.alive = false; } draw(ctx, cx, cy) { if (!this.alive)
-                        return; ctx.fillStyle = this.type === 'corpse' ? '#5a3a3a' : '#8B7355';
+                    this.y += Math.sin(this.angle) * this.speed * dt; if (this.x < -50 || this.x > wW + 50 || this.y < -50 || this.y > wH + 50) this.alive = false; } draw(ctx, cx, cy) { if (!this.alive) return;
+                    ctx.fillStyle = this.type === 'corpse' ? '#5a3a3a' : '#8B7355';
                     ctx.fillRect(this.x - cx - 6, this.y - cy - 6, 12, 12);
                     ctx.strokeStyle = '#000';
                     ctx.strokeRect(this.x - cx - 6, this.y - cy - 6, 12, 12); } }
-            // Новый класс: труп врага
             class Corpse { constructor(x, y, enemyType) { this.x = x;
                     this.y = y;
                     this.type = enemyType;
                     this.life = CORPSE_LIFETIME;
                     this.looted = false;
-                    this.r = enemyType === 'saw' ? 14 : enemyType === 'pistol' ? 13 : 18; } up(dt) { this.life -= dt; return this
-                        .life > 0; } draw(ctx, cx, cy) { let sx = this.x - cx,
+                    this.r = enemyType === 'saw' ? 14 : enemyType === 'pistol' ? 13 : 18; } up(dt) { this.life -= dt; return this.life > 0; } draw(ctx, cx, cy) { let sx = this.x - cx,
                         sy = this.y - cy;
                     ctx.save();
                     ctx.translate(sx, sy);
@@ -403,7 +418,6 @@
                     ctx.beginPath();
                     ctx.arc(0, -10, 7, 0, Math.PI * 2);
                     ctx.fill();
-                    // глаза Х
                     ctx.strokeStyle = '#000';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
@@ -418,7 +432,6 @@
                     ctx.moveTo(5, -12);
                     ctx.lineTo(1, -8);
                     ctx.stroke();
-                    // кровь
                     ctx.fillStyle = '#600';
                     ctx.beginPath();
                     ctx.arc(-3, 5, 4, 0, Math.PI);
@@ -428,8 +441,60 @@
                     ctx.fill();
                     ctx.restore(); } }
 
+            // === ФРАЗЫ ГЕРОЯ ===
+            const HERO_PHRASES = [
+                { text: "I'LL PUT YOU IN YOUR PLACE, YOU FREAKS!", event: 'kill', chance: 0.2 },
+                { text: "IS THIS A JOKE OR SOMETHING!?", event: 'hit', chance: 0.3 },
+                { text: "COME HERE!!", event: 'dash', chance: 0.25 },
+                { text: "YOU ARE RIGHT WHERE I WANTED U 2 BE!!!", event: 'boss', chance: 0.4 },
+                { text: "No, dude, like, you're REALLY weak, I didn't even feel you what I even talking about?", event: 'kill', chance: 0.15 }
+            ];
+            let activeHeroPhrases = []; // { text, timer, x, y }
+
+            function heroSpeak(eventType) {
+                if (!player || player.speechCooldown > 0) return;
+                // фильтруем фразы по событию
+                let pool = HERO_PHRASES.filter(p => p.event === eventType);
+                if (pool.length === 0) return;
+                // выбираем случайную с учётом шанса
+                let phrase = pool[Math.floor(Math.random() * pool.length)];
+                if (Math.random() > phrase.chance) return;
+                // добавляем фразу
+                activeHeroPhrases.push({
+                    text: 'ILERT: ' + phrase.text,
+                    timer: 2.5,
+                    x: VW / 2,
+                    y: VH / 2 - 60
+                });
+                player.speechCooldown = 5.0; // кулдаун 5 сек
+                phraseSfx();
+            }
+
+            function drawShakingText(ctx, text, cx, cy, time) {
+                // шрифт Impact, отличается от основного моноширинного
+                ctx.font = 'bold 28px Impact, Arial Black, sans-serif';
+                ctx.textAlign = 'center';
+                let totalWidth = ctx.measureText(text).width;
+                let startX = cx - totalWidth / 2;
+                let x = startX;
+                for (let i = 0; i < text.length; i++) {
+                    let char = text[i];
+                    let charWidth = ctx.measureText(char).width;
+                    // дрожание буквы
+                    let shakeX = Math.sin(time * 25 + i * 1.2) * 3;
+                    let shakeY = Math.cos(time * 20 + i * 1.7) * 3;
+                    // обводка (тень)
+                    ctx.fillStyle = '#000';
+                    ctx.fillText(char, x + charWidth / 2 + shakeX + 2, cy + shakeY + 2);
+                    ctx.fillStyle = '#ff2222';
+                    ctx.fillText(char, x + charWidth / 2 + shakeX, cy + shakeY);
+                    x += charWidth;
+                }
+            }
+
             class Player {
-                constructor(x, y) { this.x = x;
+                constructor(x, y) {
+                    this.x = x;
                     this.y = y;
                     this.w = 28;
                     this.h = 32;
@@ -476,229 +541,209 @@
                     this.maxOrgansEver = 0;
                     this.deagleKills = 0;
                     this.stickKills = 0;
-                    this.holdingObject = null; // { type: 'box'|'corpse', obj: ссылка на объект? } для декора/трупа
+                    this.holdingObject = null;
+                    // перки
+                    this.vampireHeal = 0;
+                    this.fastReload = false;
+                    this.dashRangeMul = 1.0;
+                    this.fireTrail = false;
+                    this.doubleShot = false;
+                    // фразы
+                    this.speechCooldown = 0;
+                    // для сохранения позиции рывка (огненный след)
+                    this.dashStartX = 0;
+                    this.dashStartY = 0;
                 }
-                reset(x, y) { this.x = x;
-                    this.y = y;
-                    this.hp = this.maxHp;
-                    this.angle = 0;
-                    this.weapon = 'stick';
-                    this.stickCd = 0;
-                    this.deagleLoaded = true;
-                    this.deagleReload = false;
-                    this.deagleReloadT = 0;
-                    this.casings = 0;
-                    this.casingT = 0;
-                    this.shaking = false;
-                    this.shakeT = 0;
-                    this.madPts = 0;
-                    this.madMult = 1;
-                    this.madMultT = 0;
-                    this.killsW = 0;
-                    this.multiKT = 0;
-                    this.noDmgT = 0;
-                    this.styleTxt = '';
-                    this.styleT = 0;
-                    this.dashCd = 0;
-                    this.isDash = false;
-                    this.dashT = 0;
-                    this.jx = 0;
-                    this.jy = 0;
-                    this.jt = 0;
-                    this.stunT = 0;
-                    this.dashHit = false;
-                    this.organs = 0;
-                    this.isMov = false;
-                    this.moveAnim = 0;
-                    this.fireT = 0;
-                    this.killCount = 0;
-                    this.maxMad = 0;
-                    this.angelHealStreak = 0;
-                    this.diedByCasings = false;
-                    this.threwOrganAtTurret = false;
-                    this.burnedEnemy = false;
-                    this.maxOrgansEver = 0;
-                    this.deagleKills = 0;
-                    this.stickKills = 0;
-                    this.holdingObject = null; }
+                reset(x, y) {
+                    // сброс состояния, но перки сохраняем? Обычно после смерти перки сбрасываются. По дизайну — сбросим.
+                    this.x = x; this.y = y; this.hp = this.maxHp; this.angle = 0; this.weapon = 'stick';
+                    this.stickCd = 0; this.deagleLoaded = true; this.deagleReload = false; this.deagleReloadT = 0;
+                    this.casings = 0; this.casingT = 0; this.shaking = false; this.shakeT = 0;
+                    this.madPts = 0; this.madMult = 1; this.madMultT = 0; this.killsW = 0; this.multiKT = 0;
+                    this.noDmgT = 0; this.styleTxt = ''; this.styleT = 0; this.dashCd = 0; this.isDash = false;
+                    this.dashT = 0; this.jx = 0; this.jy = 0; this.jt = 0; this.stunT = 0; this.dashHit = false;
+                    this.organs = 0; this.isMov = false; this.moveAnim = 0; this.fireT = 0; this.killCount = 0;
+                    this.maxMad = 0; this.angelHealStreak = 0; this.diedByCasings = false; this.threwOrganAtTurret = false;
+                    this.burnedEnemy = false; this.maxOrgansEver = 0; this.deagleKills = 0; this.stickKills = 0;
+                    this.holdingObject = null;
+                    // перки сбрасываем при смерти
+                    this.vampireHeal = 0; this.fastReload = false; this.dashRangeMul = 1.0; this.fireTrail = false; this.doubleShot = false;
+                    this.speechCooldown = 0;
+                }
                 takeDamage(dmg) { this.hp -= dmg;
-                    redScreen = 0.3; if (this.hp < 0) this.hp = 0; }
-                up(dt, wW, wH, bullets, parts, blood, obs, thrown, fire, corpses) { if (this.casings > CASE_TH5 && !this
-                        .shaking) { this.jt += dt; let int = this.casings > CASE_TH10 ? JITTER10 : JITTER5; if (
-                            this.jt > 0.08) { this.jt = 0;
+                    redScreen = 0.3; if (this.hp < 0) this.hp = 0;
+                    heroSpeak('hit'); }
+                up(dt, wW, wH, bullets, parts, blood, obs, thrown, fire, corpses) {
+                    if (this.casings > CASE_TH5 && !this.shaking) { this.jt += dt; let int = this.casings > CASE_TH10 ? JITTER10 : JITTER5; if (this.jt > 0.08) { this.jt = 0;
                             this.jx = (Math.random() - 0.5) * int * 8;
                             this.jy = (Math.random() - 0.5) * int * 8; } } else { this.jx = 0;
                         this.jy = 0;
-                        this.jt = 0; } if (this.stunT > 0) { this.stunT -= dt; return; } if (this.dashCd > 0) this
-                        .dashCd -= dt; if (this.isDash) { this.dashT -= dt; let sp = DASH_D / 0.12; let mx = Math
-                            .cos(this.dashAngle) * sp * dt,
-                            my = Math.sin(this.dashAngle) * sp * dt; let nx = this.x + mx,
-                            ny = this.y + my; let mrg = this.w / 2 + 2;
+                        this.jt = 0; }
+                    if (this.stunT > 0) { this.stunT -= dt; return; }
+                    if (this.speechCooldown > 0) this.speechCooldown -= dt;
+                    if (this.dashCd > 0) this.dashCd -= dt;
+                    if (this.isDash) {
+                        this.dashT -= dt;
+                        let dist = DASH_D * this.dashRangeMul; // перк "Дальний рывок"
+                        let sp = dist / 0.12;
+                        let mx = Math.cos(this.dashAngle) * sp * dt,
+                            my = Math.sin(this.dashAngle) * sp * dt;
+                        let nx = this.x + mx,
+                            ny = this.y + my;
+                        let mrg = this.w / 2 + 2;
                         nx = Math.max(mrg, Math.min(wW - mrg, nx));
-                        ny = Math.max(mrg, Math.min(wH - mrg, ny)); if (!this.collideObs(nx, ny, obs)) { this
-                            .x = nx;
-                            this.y = ny; } let hit = false; for (let e of enemies) { if (!e.alive)
-                        continue; let d = Math.hypot(e.x - this.x, e.y - this.y); if (d < e.r + this.w *
-                            0.8) { e.takeDmg(DASH_ENEMY, this, parts, 'dash');
-                            e.stunT = STUN_DUR; let ang = Math.atan2(e.y - this.y, e.x - this.x);
-                            e.x += Math.cos(ang) * 50;
-                            e.y += Math.sin(ang) * 50;
-                            hit = true;
-                            this.x -= Math.cos(this.dashAngle) * 20;
-                            this.y -= Math.sin(this.dashAngle) * 20;
-                            this.isDash = false;
-                            this.dashT = 0; break; } } if (hit) { this.takeDamage(DASH_SELF);
+                        ny = Math.max(mrg, Math.min(wH - mrg, ny));
+                        if (!this.collideObs(nx, ny, obs)) { this.x = nx;
+                            this.y = ny; }
+                        // огненный след (если перк активен)
+                        if (this.fireTrail && Math.random() < 0.3) {
+                            fires.push(new Fire(this.x, this.y));
+                        }
+                        let hit = false;
+                        for (let e of enemies) { if (!e.alive) continue; let d = Math.hypot(e.x - this.x, e.y - this.y); if (d < e.r + this.w * 0.8) { e.takeDmg(DASH_ENEMY, this, parts, 'dash');
+                                e.stunT = STUN_DUR; let ang = Math.atan2(e.y - this.y, e.x - this.x);
+                                e.x += Math.cos(ang) * 50;
+                                e.y += Math.sin(ang) * 50;
+                                hit = true;
+                                this.x -= Math.cos(this.dashAngle) * 20;
+                                this.y -= Math.sin(this.dashAngle) * 20;
+                                this.isDash = false;
+                                this.dashT = 0; break; } }
+                        if (hit) { this.takeDamage(DASH_SELF);
                             hitSnd();
                             this.isDash = false;
-                            this.dashHit = true; return; }
-                        parts.push(new Particle(this.x, this.y, this.dashAngle + Math.PI + (Math.random() -
-                                0.5), 200, '#fff', 0.15)); if (this.dashT <= 0) { this.isDash =
-                        false; if (this.dashHit) { this.takeDamage(DASH_SELF);
+                            this.dashHit = true;
+                            heroSpeak('dash'); return; }
+                        parts.push(new Particle(this.x, this.y, this.dashAngle + Math.PI + (Math.random() - 0.5), 200, '#fff', 0.15));
+                        if (this.dashT <= 0) { this.isDash = false; if (this.dashHit) { this.takeDamage(DASH_SELF);
                                 hitSnd(); } else { this.stunT = DASH_MISS_STUN;
-                                shakeSnd(); } this.dashHit = false; } return; } let dx = 0,
-                        dy = 0; if (!this.shaking && !this.isDash) { if (keys['w'] || keys['arrowup'] ||
-                        keys['ц']) dy -= 1; if (keys['s'] || keys['arrowdown'] || keys['ы']) dy += 1; if (
-                            keys['a'] || keys['arrowleft'] || keys['ф']) dx -= 1; if (keys['d'] || keys[
-                            'arrowright'] || keys['в']) dx += 1; if (dx !== 0 && dy !== 0) { dx *= 0.707;
+                                shakeSnd(); }
+                            this.dashHit = false;
+                            heroSpeak('dash'); }
+                        return;
+                    }
+                    let dx = 0,
+                        dy = 0;
+                    if (!this.shaking && !this.isDash) { if (keys['w'] || keys['arrowup'] || keys['ц']) dy -= 1; if (keys['s'] || keys['arrowdown'] || keys['ы']) dy += 1; if (keys['a'] || keys['arrowleft'] || keys['ф']) dx -= 1; if (keys['d'] || keys['arrowright'] || keys['в']) dx += 1; if (dx !== 0 && dy !== 0) { dx *= 0.707;
                             dy *= 0.707; }
-                        this.isMov = (dx !== 0 || dy !== 0); if (this.isMov) { this.moveAnim += dt *
-                        12; let nx = this.x + dx * this.spd * dt,
-                            ny = this.y + dy * this.spd * dt; let mrg = this.w / 2 + 2; if (nx > mrg &&
-                                nx < wW - mrg) this.x = nx; if (ny > mrg && ny < wH - mrg) this.y =
-                            ny; if (this.collideObs(this.x, this.y, obs)) { this.x -= dx * this.spd *
-                                dt;
-                            this.y -= dy * this.spd * dt; } } } else { this.isMov = false; } let wm =
-                        toWorld(mx, my); let ta = Math.atan2(wm.y - this.y, wm.x - this.x); if (this
-                        .casings > CASE_TH5 && !this.shaking) { let j = this.casings > CASE_TH10 ?
-                            JITTER10 * 0.4 : JITTER5 * 0.4;
+                        this.isMov = (dx !== 0 || dy !== 0); if (this.isMov) { this.moveAnim += dt * 12; let nx = this.x + dx * this.spd * dt,
+                            ny = this.y + dy * this.spd * dt; let mrg = this.w / 2 + 2; if (nx > mrg && nx < wW - mrg) this.x = nx; if (ny > mrg && ny < wH - mrg) this.y = ny; if (this.collideObs(this.x, this.y, obs)) { this.x -= dx * this.spd * dt;
+                            this.y -= dy * this.spd * dt; } } } else { this.isMov = false; }
+                    let wm = toWorld(mx, my);
+                    let ta = Math.atan2(wm.y - this.y, wm.x - this.x); if (this.casings > CASE_TH5 && !this.shaking) { let j = this.casings > CASE_TH10 ? JITTER10 * 0.4 : JITTER5 * 0.4;
                         ta += (Math.random() - 0.5) * j; }
-                    this.angle = ta; if (keys['shift'] && this.dashCd <= 0 && !this.shaking && !this.isDash) { this
-                            .isDash = true;
+                    this.angle = ta;
+                    if (keys['shift'] && this.dashCd <= 0 && !this.shaking && !this.isDash) { this.isDash = true;
                         this.dashT = 0.12;
                         this.dashAngle = this.angle;
                         this.dashCd = DASH_CD;
                         this.dashHit = false;
+                        this.dashStartX = this.x;
+                        this.dashStartY = this.y;
                         dashSnd();
-                        keys['shift'] = false; return; } if (this.stickCd > 0) this.stickCd -= dt; if (this
-                        .deagleReload) { this.deagleReloadT -= dt; if (this.deagleReloadT <= 0) { this
-                            .deagleReload = false;
-                        this.deagleLoaded = true; } } if (this.shaking) { this.shakeT -= dt; if (this
-                        .shakeT <= 0) { this.shaking = false;
-                        this.casings = 0; } } if (this.casings > 0 && !this.shaking && this.isMov) { this
-                        .casingT += dt; let dr = 1; if (this.casings > CASE_TH10) dr = 3; else if (this
-                            .casings > CASE_TH5) dr = 2; while (this.casingT >= CASE_DMG_INT) { this
-                            .casingT -= CASE_DMG_INT;
-                        this.takeDamage(dr); } } else this.casingT = 0; for (let f of fire) { if (Math.hypot(
-                            f.x - this.x, f.y - this.y) < f.r + 10) { this.fireT += dt; while (this
-                        .fireT >= FIRE_DMG_INT) { this.fireT -= FIRE_DMG_INT;
-                        this.takeDamage(1); } break; } } if (keys['1'] || (mwDelta < -30 && this.weapon !==
-                        'stick') && !this.holdingObject) { this.weapon = 'stick';
+                        keys['shift'] = false;
+                        heroSpeak('dash'); return; }
+                    if (this.stickCd > 0) this.stickCd -= dt;
+                    if (this.deagleReload) { this.deagleReloadT -= dt; if (this.deagleReloadT <= 0) { this.deagleReload = false;
+                        this.deagleLoaded = true; } }
+                    if (this.shaking) { this.shakeT -= dt; if (this.shakeT <= 0) { this.shaking = false;
+                        this.casings = 0; } }
+                    if (this.casings > 0 && !this.shaking && this.isMov) { this.casingT += dt; let dr = 1; if (this.casings > CASE_TH10) dr = 3; else if (this.casings > CASE_TH5) dr = 2; while (this.casingT >= CASE_DMG_INT) { this.casingT -= CASE_DMG_INT;
+                        this.takeDamage(dr); } } else this.casingT = 0;
+                    for (let f of fire) { if (Math.hypot(f.x - this.x, f.y - this.y) < f.r + 10) { this.fireT += dt; while (this.fireT >= FIRE_DMG_INT) { this.fireT -= FIRE_DMG_INT;
+                        this.takeDamage(1); } break; } }
+                    if (keys['1'] || (mwDelta < -30 && this.weapon !== 'stick') && !this.holdingObject) { this.weapon = 'stick';
                         mwDelta = 0;
-                        keys['1'] = false; } if (keys['2'] || (mwDelta > 30 && this.weapon !== 'deagle') && !this
-                        .holdingObject) { this.weapon = 'deagle';
+                        keys['1'] = false; }
+                    if (keys['2'] || (mwDelta > 30 && this.weapon !== 'deagle') && !this.holdingObject) { this.weapon = 'deagle';
                         mwDelta = 0;
-                        keys['2'] = false; } if (Math.abs(mwDelta) > 60) mwDelta = 0;
-                    // Бросок предмета или атака только если нет предмета в руках
-                    if (this.holdingObject) {
-                        if (keys['q']) { // бросить предмет
-                            this.throwHeldObject(thrown);
-                            keys['q'] = false;
-                        }
-                        return; // с предметом нельзя атаковать, только двигаться
-                    }
+                        keys['2'] = false; }
+                    if (Math.abs(mwDelta) > 60) mwDelta = 0;
+                    if (this.holdingObject) { if (keys['q']) { this.throwHeldObject(thrown);
+                            keys['q'] = false; } return; }
                     if (mr && this.weapon === 'stick' && this.stickCd <= 0 && !this.shaking) { this.stickCd = STICK_CD;
                         stickSnd();
-                        brutalStickSnd(); // дополнительный жёсткий звук
-                        for (let e of enemies) { let d = Math.hypot(e.x - this.x, e.y - this.y); if (d < STICK_R + e.r) { e
-                                    .takeDmg(STICK_DMG, this, parts, 'stick');
-                                // отбрасывание
+                        brutalStickSnd();
+                        for (let e of enemies) { let d = Math.hypot(e.x - this.x, e.y - this.y); if (d < STICK_R + e.r) { e.takeDmg(STICK_DMG, this, parts, 'stick');
                                 let ang = Math.atan2(e.y - this.y, e.x - this.x);
                                 e.x += Math.cos(ang) * 60;
                                 e.y += Math.sin(ang) * 60;
-                                e.stunT = 0.5; // краткий стан
-                                for (let i = 0; i < 8; i++) blood.push(new Blood(e.x + (Math.random() - 0.5) * 20, e.y + (Math.random() -
-                                        0.5) * 20, 3 + Math.random() * 12));
-                                // частицы мяса
-                                for (let i = 0; i < 10; i++) parts.push(new Particle(e.x, e.y, Math.random() * Math.PI * 2,
-                                    120 + Math.random() * 200, '#cc0000', 0.6)); } } for (let i = 0; i < 12; i++) parts
-                            .push(new Particle(this.x, this.y, this.angle + (Math.random() - 0.5) * 1.5, 180 + Math.random() *
-                                250, '#8B7355', 0.3));
-                        mr = false; } if (ml && this.weapon === 'deagle' && this.deagleLoaded && !this.deagleReload &&
-                        !this.shaking) { this.deagleLoaded = false;
-                        shootSnd(); let sa = this.angle; if (this.casings > CASE_TH10) sa += (Math.random() - 0.5) *
-                            0.5; else if (this.casings > CASE_TH5) sa += (Math.random() - 0.5) * 0.2; let bx = this
-                            .x + Math.cos(sa) * 22,
+                                e.stunT = 0.5; for (let i = 0; i < 8; i++) blood.push(new Blood(e.x + (Math.random() - 0.5) * 20, e.y + (Math.random() - 0.5) * 20, 3 + Math.random() * 12)); for (let i = 0; i < 10; i++) parts.push(new Particle(e.x, e.y, Math.random() * Math.PI * 2, 120 + Math.random() * 200, '#cc0000', 0.6)); } } for (let i = 0; i < 12; i++) parts.push(new Particle(this.x, this.y, this.angle + (Math.random() - 0.5) * 1.5, 180 + Math.random() * 250, '#8B7355', 0.3));
+                        mr = false;
+                        heroSpeak('kill'); }
+                    if (ml && this.weapon === 'deagle' && this.deagleLoaded && !this.deagleReload && !this.shaking) { this.deagleLoaded = false;
+                        shootSnd(); let sa = this.angle; if (this.casings > CASE_TH10) sa += (Math.random() - 0.5) * 0.5; else if (this.casings > CASE_TH5) sa += (Math.random() - 0.5) * 0.2; let bx = this.x + Math.cos(sa) * 22,
                             by = this.y + Math.sin(sa) * 22;
                         bullets.push(new Bullet(bx, by, sa, DEAGLE_DMG, 'player'));
+                        // Двойной выстрел (перк)
+                        if (this.doubleShot && Math.random() < 0.3) {
+                            let spread = (Math.random() - 0.5) * 0.3;
+                            bullets.push(new Bullet(bx, by, sa + spread, DEAGLE_DMG, 'player'));
+                        }
                         this.casings++;
                         this.x -= Math.cos(sa) * 6;
-                        this.y -= Math.sin(sa) * 6; for (let i = 0; i < 4; i++) parts.push(new Particle(bx, by,
-                            sa + Math.PI + (Math.random() - 0.5) * 0.6, 250 + Math.random() * 200,
-                            '#ffaa00', 0.2));
-                        ml = false; } if (keys['r'] && this.weapon === 'deagle' && !this.deagleLoaded && !this
-                        .deagleReload && !this.shaking) { this.deagleReload = true;
-                        this.deagleReloadT = RELOAD;
+                        this.y -= Math.sin(sa) * 6; for (let i = 0; i < 4; i++) parts.push(new Particle(bx, by, sa + Math.PI + (Math.random() - 0.5) * 0.6, 250 + Math.random() * 200, '#ffaa00', 0.2));
+                        ml = false;
+                        heroSpeak('kill'); }
+                    if (keys['r'] && this.weapon === 'deagle' && !this.deagleLoaded && !this.deagleReload && !this.shaking) { this.deagleReload = true;
+                        this.deagleReloadT = this.fastReload ? RELOAD * 0.6 : RELOAD; // перк быстрой перезарядки
                         reloadSnd();
-                        keys['r'] = false; } if (keys['k'] && !this.shaking && this.casings > 0) { this.shaking =
-                        true;
+                        keys['r'] = false; }
+                    if (keys['k'] && !this.shaking && this.casings > 0) { this.shaking = true;
                         this.shakeT = KEY_CD;
                         shakeSnd();
-                        keys['k'] = false; } if ((keys['e'] || keys['g']) && this.organs > 0) { let types = ['eye',
-                            'brain', 'skull', 'guts', 'trachea'
-                        ]; let t = types[Math.floor(Math.random() * types.length)];
+                        keys['k'] = false; }
+                    if ((keys['e'] || keys['g']) && this.organs > 0) { let types = ['eye', 'brain', 'skull', 'guts', 'trachea']; let t = types[Math.floor(Math.random() * types.length)];
                         this.organs--; let wx = this.x + Math.cos(this.angle) * 18,
                             wy = this.y + Math.sin(this.angle) * 18;
                         thrown.push(new ThrownOrgan(wx, wy, this.angle, t));
                         keys['e'] = false;
-                        keys['g'] = false; } if (this.madMultT > 0) { this.madMultT -= dt; if (this.madMultT <=
-                        0) this.madMult = 1; } if (this.multiKT > 0) { this.multiKT -= dt; if (this
-                        .multiKT <= 0) this.killsW = 0; } if (this.noDmgT > 0) this.noDmgT -= dt; if (this
-                        .styleT > 0) { this.styleT -= dt; if (this.styleT <= 0) this.styleTxt = ''; } if (this
-                        .noDmgT <= 0 && this.madPts > 0) this.madPts = Math.max(0, this.madPts - MAD_RATE *
-                        dt);
+                        keys['g'] = false; }
+                    if (this.madMultT > 0) { this.madMultT -= dt; if (this.madMultT <= 0) this.madMult = 1; }
+                    if (this.multiKT > 0) { this.multiKT -= dt; if (this.multiKT <= 0) this.killsW = 0; }
+                    if (this.noDmgT > 0) this.noDmgT -= dt; if (this.styleT > 0) { this.styleT -= dt; if (this.styleT <= 0) this.styleTxt = ''; }
+                    if (this.noDmgT <= 0 && this.madPts > 0) this.madPts = Math.max(0, this.madPts - MAD_RATE * dt);
                     this.maxMad = Math.max(this.maxMad, this.madPts);
-                    this.maxOrgansEver = Math.max(this.maxOrgansEver, this.organs); if (this.maxOrgansEver >= 40)
-                        unlockAch('psycho'); if (this.maxOrgansEver >= 30) unlockAch('collector'); }
-                collideObs(nx, ny, obs) { for (let o of obs) { if (nx - this.w / 2 < o.x + o.w && nx + this.w / 2 > o.x &&
-                            ny - this.h / 2 < o.y + o.h && ny + this.h / 2 > o.y) return true; } return false; }
-                addKill(type, isCrit, isStick) { this.noDmgT = MAD_DECAY;
+                    this.maxOrgansEver = Math.max(this.maxOrgansEver, this.organs); if (this.maxOrgansEver >= 40) unlockAch('psycho'); if (this.maxOrgansEver >= 30) unlockAch('collector');
+                }
+                collideObs(nx, ny, obs) { for (let o of obs) { if (nx - this.w / 2 < o.x + o.w && nx + this.w / 2 > o.x && ny - this.h / 2 < o.y + o.h && ny + this.h / 2 > o.y) return true; } return false; }
+                addKill(type, isCrit, isStick) {
+                    this.noDmgT = MAD_DECAY;
                     this.killsW++;
                     this.multiKT = MULTI_W;
                     this.killCount++; let pts = 100; if (type === 'boss') pts = 1000; if (isStick) { pts = 150;
-                        this.stickKills++; if (this.stickKills >= 50) unlockAch('stick_champ'); } else { this
-                        .deagleKills++; if (this.deagleKills >= 100) unlockAch('deagle_master'); } if (
-                    isCrit) { pts = CRIT_BONUS;
+                        this.stickKills++; if (this.stickKills >= 50) unlockAch('stick_champ'); } else { this.deagleKills++; if (this.deagleKills >= 100) unlockAch('deagle_master'); }
+                    if (isCrit) { pts = CRIT_BONUS;
                         this.styleTxt = 'ЖЁСТЧЕ1!!';
-                        this.styleT = 2; } if (this.killsW >= 2 && this.multiKT > 0) { pts += MULTI_BONUS;
+                        this.styleT = 2; }
+                    if (this.killsW >= 2 && this.multiKT > 0) { pts += MULTI_BONUS;
                         this.madMult = Math.max(this.madMult, 1.5);
                         this.madMultT = 3; }
-                    this.madPts += pts * this.madMult; if (this.killsW >= 5) { this.madMult = Math.max(this.madMult,
-                            3);
+                    this.madPts += pts * this.madMult; if (this.killsW >= 5) { this.madMult = Math.max(this.madMult, 3);
                         this.madMultT = 3;
                         this.styleTxt = 'ПСИХОТИЧЕСКИЙ!';
-                        this.styleT = 2.5; } else if (this.killsW >= 3) { this.madMult = Math.max(this.madMult,
-                            2);
+                        this.styleT = 2.5; } else if (this.killsW >= 3) { this.madMult = Math.max(this.madMult, 2);
                         this.madMultT = 3;
                         this.styleTxt = 'БЕЗУМНЫЙ!';
                         this.styleT = 2; }
-                    this.maxMad = Math.max(this.maxMad, this.madPts); }
-                // Бросок того, что держит игрок
-                throwHeldObject(thrown) {
-                    if (!this.holdingObject) return;
-                    let type = this.holdingObject.type;
-                    let damage = type === 'corpse' ? 20 : 40;
-                    let thrownObj = new ThrownObject(this.x, this.y, this.angle, type, damage);
-                    thrown.push(thrownObj);
-                    this.holdingObject = null;
+                    this.maxMad = Math.max(this.maxMad, this.madPts);
+                    // Вампиризм
+                    if (this.vampireHeal > 0) {
+                        this.hp = Math.min(this.maxHp, this.hp + this.vampireHeal);
+                    }
+                    // фразы
+                    if (type === 'boss') heroSpeak('boss');
+                    else heroSpeak('kill');
                 }
+                throwHeldObject(thrown) { if (!this.holdingObject) return; let type = this.holdingObject.type; let damage = type === 'corpse' ? 20 : 40; let thrownObj = new ThrownObject(this.x, this.y, this.angle, type, damage);
+                    thrown.push(thrownObj);
+                    this.holdingObject = null; }
                 draw(ctx, cx, cy) { let sx = this.x - cx + this.jx,
                         sy = this.y - cy + this.jy;
                     ctx.save();
                     ctx.translate(sx, sy);
-                    ctx.rotate(this.angle); if (this.isDash) ctx.globalAlpha = 0.7; if (this.stunT > 0) { ctx
-                            .globalAlpha = 0.8;
-                        ctx.fillStyle = '#ff0'; for (let i = 0; i < 3; i++) { let a = (performance.now() / 100 +
-                                i * 2.1) % (Math.PI * 2); let rx = Math.cos(a) * 15,
+                    ctx.rotate(this.angle); if (this.isDash) ctx.globalAlpha = 0.7; if (this.stunT > 0) { ctx.globalAlpha = 0.8;
+                        ctx.fillStyle = '#ff0'; for (let i = 0; i < 3; i++) { let a = (performance.now() / 100 + i * 2.1) % (Math.PI * 2); let rx = Math.cos(a) * 15,
                                 ry = Math.sin(a) * 15 - 20;
                             ctx.fillRect(rx - 3, ry - 3, 6, 6); } }
                     ctx.fillStyle = '#7a7a7a';
@@ -724,13 +769,10 @@
                     ctx.fillRect(-16, -6, 5, 8);
                     ctx.fillStyle = '#c0c0c0';
                     ctx.fillRect(-15, -4, 3, 3);
-                    if (this.holdingObject) {
-                        // рисуем предмет в руках
-                        ctx.fillStyle = this.holdingObject.type === 'corpse' ? '#5a3a3a' : '#8B7355';
+                    if (this.holdingObject) { ctx.fillStyle = this.holdingObject.type === 'corpse' ? '#5a3a3a' : '#8B7355';
                         ctx.fillRect(18, -8, 14, 14);
                         ctx.strokeStyle = '#000';
-                        ctx.strokeRect(18, -8, 14, 14);
-                    } else if (this.weapon === 'stick') { ctx.strokeStyle = '#8B7355';
+                        ctx.strokeRect(18, -8, 14, 14); } else if (this.weapon === 'stick') { ctx.strokeStyle = '#8B7355';
                         ctx.lineWidth = 3;
                         ctx.beginPath();
                         ctx.moveTo(14, -6);
@@ -744,7 +786,7 @@
                         ctx.fillStyle = '#1a1a1a';
                         ctx.fillRect(14, -7, 2, 3); } if (this.shaking) { ctx.fillStyle = '#fa0';
                         ctx.fillRect(3 + Math.sin(performance.now() / 30) * 3, 20, 3, 2); }
-                    ctx.restore(); if (this.deagleReload) { let p = 1 - (this.deagleReloadT / RELOAD);
+                    ctx.restore(); if (this.deagleReload) { let p = 1 - (this.deagleReloadT / (this.fastReload ? RELOAD * 0.6 : RELOAD));
                         ctx.fillStyle = '#ffaa00';
                         ctx.fillRect(sx - 10, sy - 30, 20, 3);
                         ctx.fillStyle = '#ffffff';
@@ -818,96 +860,46 @@
                         this.tAngle = 0; break; }
                     this.maxHp = this.hp;
                     this.atkTimer = Math.random() * this.atkCd; if (this.type === 'boss') this.turretT = 3; }
-                takeDmg(dmg, player, parts, weapon) { this.hp -= dmg; for (let i = 0; i < 5; i++) parts.push(new
-                        Particle(this.x, this.y, Math.random() * Math.PI * 2, 80 + Math.random() * 150, this
-                            .type === 'boss' ? '#ff3333' : '#cc0000', 0.3)); if (this.hp <= 0) { this.alive =
-                        false; if (this.type !== 'turret') deathSnd(); let isCrit = weapon === 'deagle' &&
-                        Math.random() < CRIT_C,
+                takeDmg(dmg, player, parts, weapon) { this.hp -= dmg; for (let i = 0; i < 5; i++) parts.push(new Particle(this.x, this.y, Math.random() * Math.PI * 2, 80 + Math.random() * 150, this.type === 'boss' ? '#ff3333' : '#cc0000', 0.3)); if (this.hp <= 0) { this.alive = false; if (this.type !== 'turret') deathSnd(); let isCrit = weapon === 'deagle' && Math.random() < CRIT_C,
                         isStick = weapon === 'stick';
-                    player.addKill(this.type, isCrit, isStick); if (this.type === 'turret') { explSnd(); for (let i =
-                            0; i < 8; i++) parts.push(new Particle(this.x, this.y, (i / 8) * Math.PI * 2, 200 +
-                            Math.random() * 100, '#ff6600', 0.8)); for (let i = 0; i < 3; i++) fires.push(new
-                            Fire(this.x + (Math.random() - 0.5) * 30, this.y + (Math.random() - 0.5) * 30)); } else { for (
-                            let i = 0; i < 12; i++) parts.push(new Particle(this.x, this.y, Math.random() * Math
-                                .PI * 2, 120 + Math.random() * 200, this.color, 0.5)); for (let i = 0; i < 8 + (
-                                this.type === 'boss' ? 12 : 0); i++) blood.push(new Blood(this.x + (Math.random() -
-                                0.5) * this.r * 2, this.y + (Math.random() - 0.5) * this.r * 2, this.type ===
-                                'boss' ? 15 + Math.random() * 25 : 4 + Math.random() * 12)); let dropCount = Math
-                            .random() < ORGAN_DROP ? 1 + Math.floor(Math.random() * 3) : 0; for (let i = 0; i <
-                                dropCount; i++) { let types = ['eye', 'brain', 'skull', 'guts', 'trachea'];
-                            organs.push(new Organ(this.x + (Math.random() - 0.5) * 20, this.y + (Math.random() -
-                                0.5) * 20, types[Math.floor(Math.random() * types.length)])); } } } }
-                up(dt, player, bullets, parts, wW, wH, obs) { if (!this.alive) return; if (this.stunT > 0) { this
-                        .stunT -= dt; return; } let dx = player.x - this.x,
+                    player.addKill(this.type, isCrit, isStick); if (this.type === 'turret') { explSnd(); for (let i = 0; i < 8; i++) parts.push(new Particle(this.x, this.y, (i / 8) * Math.PI * 2, 200 + Math.random() * 100, '#ff6600', 0.8)); for (let i = 0; i < 3; i++) fires.push(new Fire(this.x + (Math.random() - 0.5) * 30, this.y + (Math.random() - 0.5) * 30)); } else { for (let i = 0; i < 12; i++) parts.push(new Particle(this.x, this.y, Math.random() * Math.PI * 2, 120 + Math.random() * 200, this.color, 0.5)); for (let i = 0; i < 8 + (this.type === 'boss' ? 12 : 0); i++) blood.push(new Blood(this.x + (Math.random() - 0.5) * this.r * 2, this.y + (Math.random() - 0.5) * this.r * 2, this.type === 'boss' ? 15 + Math.random() * 25 : 4 + Math.random() * 12)); let dropCount = Math.random() < ORGAN_DROP ? 1 + Math.floor(Math.random() * 3) : 0; for (let i = 0; i < dropCount; i++) { let types = ['eye', 'brain', 'skull', 'guts', 'trachea'];
+                            organs.push(new Organ(this.x + (Math.random() - 0.5) * 20, this.y + (Math.random() - 0.5) * 20, types[Math.floor(Math.random() * types.length)])); } } } }
+                up(dt, player, bullets, parts, wW, wH, obs) { if (!this.alive) return; if (this.stunT > 0) { this.stunT -= dt; return; } let dx = player.x - this.x,
                         dy = player.y - this.y,
                         dist = Math.hypot(dx, dy),
                         ang = Math.atan2(dy, dx),
-                        mv = this.spd * dt; if (this.type === 'turret') { mv = 0; if (dist < TURRET_RANGE) this
-                        .tAngle = Math.atan2(player.y - this.y, player.x - this.x); } else if (this.type ===
-                        'minigun') { if (dist > 200) { this.x += Math.cos(ang) * mv;
+                        mv = this.spd * dt; if (this.type === 'turret') { mv = 0; if (dist < TURRET_RANGE) this.tAngle = Math.atan2(player.y - this.y, player.x - this.x); } else if (this.type === 'minigun') { if (dist > 200) { this.x += Math.cos(ang) * mv;
                         this.y += Math.sin(ang) * mv; } else if (dist < 120) { this.x -= Math.cos(ang) * mv * 0.5;
-                        this.y -= Math.sin(ang) * mv * 0.5; } } else if (this.type === 'pistol') { if (dist > 200) { this
-                            .x += Math.cos(ang) * mv;
+                        this.y -= Math.sin(ang) * mv * 0.5; } } else if (this.type === 'pistol') { if (dist > 200) { this.x += Math.cos(ang) * mv;
                         this.y += Math.sin(ang) * mv; } else if (dist < 130) { this.x -= Math.cos(ang) * mv;
-                        this.y -= Math.sin(ang) * mv; } } else if (this.type === 'boss') { this.x += Math.cos(ang) *
-                        mv;
+                        this.y -= Math.sin(ang) * mv; } } else if (this.type === 'boss') { this.x += Math.cos(ang) * mv;
                     this.y += Math.sin(ang) * mv;
-                    this.floatY = Math.sin(performance.now() * 0.003) * 5;
-                    // ломаем декор
-                    for (let i = obs.length-1; i >= 0; i--) {
-                        let o = obs[i];
-                        if (this.x - this.r < o.x + o.w && this.x + this.r > o.x &&
-                            this.y - this.r < o.y + o.h && this.y + this.r > o.y) {
-                            obs.splice(i,1);
-                            for (let j=0; j<6; j++) parts.push(new Particle(o.x+o.w/2, o.y+o.h/2, Math.random()*Math.PI*2, 100, '#8B7355', 0.5));
-                        }
-                    }
-                    } else { this.x += Math.cos(ang) * mv;
-                        this.y += Math.sin(ang) * mv; } if (this.type !== 'boss') { let mrg = this.r + 2;
-                        this.x = Math.max(mrg, Math.min(wW - mrg, this.x));
-                        this.y = Math.max(mrg, Math.min(wH - mrg, this.y)); } else { this.x = Math.max(-20, Math.min(
-                            wW + 20, this.x));
-                        this.y = Math.max(-20, Math.min(wH + 20, this.y)); } if (this.type !== 'boss' && this.collideObs(this.x, this.y,
-                    obs)) { this.x -= Math.cos(ang) * mv;
-                        this.y -= Math.sin(ang) * mv; } if (this.type === 'boss') { this.turretT -= dt; if (this
-                        .turretT <= 0 && enemies.length < 30) { this.turretT = 5; let spread = Math.random() *
-                            Math.PI * 2; let tx = this.x + Math.cos(spread) * 80,
+                    this.floatY = Math.sin(performance.now() * 0.003) * 5; for (let i = obs.length - 1; i >= 0; i--) { let o = obs[i]; if (this.x - this.r < o.x + o.w && this.x + this.r > o.x && this.y - this.r < o.y + o.h && this.y + this.r > o.y) { obs.splice(i, 1); for (let j = 0; j < 6; j++) parts.push(new Particle(o.x + o.w / 2, o.y + o.h / 2, Math.random() * Math.PI * 2, 100, '#8B7355', 0.5)); } } } else { this.x += Math.cos(ang) * mv;
+                    this.y += Math.sin(ang) * mv; } if (this.type !== 'boss') { let mrg = this.r + 2;
+                    this.x = Math.max(mrg, Math.min(wW - mrg, this.x));
+                    this.y = Math.max(mrg, Math.min(wH - mrg, this.y)); } else { this.x = Math.max(-20, Math.min(wW + 20, this.x));
+                    this.y = Math.max(-20, Math.min(wH + 20, this.y)); } if (this.type !== 'boss' && this.collideObs(this.x, this.y, obs)) { this.x -= Math.cos(ang) * mv;
+                    this.y -= Math.sin(ang) * mv; } if (this.type === 'boss') { this.turretT -= dt; if (this.turretT <= 0 && enemies.length < 30) { this.turretT = 5; let spread = Math.random() * Math.PI * 2; let tx = this.x + Math.cos(spread) * 80,
                             ty = this.y + Math.sin(spread) * 80;
                         enemies.push(new Enemy(tx, ty, 'turret', diffSet[diff])); } }
-                    this.atkTimer -= dt; if (this.type === 'saw' && dist < this.atkR && this.atkTimer <= 0) { this
-                            .atkTimer = this.atkCd;
+                    this.atkTimer -= dt; if (this.type === 'saw' && dist < this.atkR && this.atkTimer <= 0) { this.atkTimer = this.atkCd;
                         player.takeDamage(this.dmg);
-                        hitSnd(); for (let i = 0; i < 3; i++) parts.push(new Particle(player.x, player.y, ang + Math
-                                .PI + (Math.random() - 0.5), 100, '#ff6600', 0.25)); } else if (this.shoots && this
-                        .type !== 'boss') { if (this.type === 'minigun') { if (this.isBurst) { this.bTimer -= dt; if (
-                                this.bTimer <= 0 && this.bIdx < this.burst) { bullets.push(new Bullet(this.x,
-                                    this.y, ang + (Math.random() - 0.5) * 0.3, this.dmg, 'enemy'));
+                        hitSnd(); for (let i = 0; i < 3; i++) parts.push(new Particle(player.x, player.y, ang + Math.PI + (Math.random() - 0.5), 100, '#ff6600', 0.25)); } else if (this.shoots && this.type !== 'boss') { if (this.type === 'minigun') { if (this.isBurst) { this.bTimer -= dt; if (this.bTimer <= 0 && this.bIdx < this.burst) { bullets.push(new Bullet(this.x, this.y, ang + (Math.random() - 0.5) * 0.3, this.dmg, 'enemy'));
                                 this.bIdx++;
                                 this.bTimer = this.bDelay; } if (this.bIdx >= this.burst) { this.isBurst = false;
-                                this.bIdx = 0; } } else if (dist < this.atkR && this.atkTimer <= 0) { this.atkTimer =
-                                this.atkCd;
+                                this.bIdx = 0; } } else if (dist < this.atkR && this.atkTimer <= 0) { this.atkTimer = this.atkCd;
                             this.isBurst = true;
                             this.bIdx = 0;
-                            this.bTimer = 0; } } else if (this.type === 'turret') { if (dist < this.atkR && this
-                                .atkTimer <= 0) { this.atkTimer = this.atkCd;
-                            bullets.push(new Bullet(this.x, this.y, ang + (Math.random() - 0.5) * 0.2, this.dmg,
-                                'enemy')); } } else { if (dist < this.atkR && this.atkTimer <= 0) { this.atkTimer =
-                                this.atkCd; let sp = (Math.random() - 0.5) * 0.2;
-                            bullets.push(new Bullet(this.x, this.y, ang + sp, this.dmg, 'enemy')); } } } else if (this
-                        .type === 'boss' && this.shoots) { if (dist < this.atkR && this.atkTimer <= 0) { this
-                            .atkTimer = this.atkCd;
-                        bullets.push(new Bullet(this.x, this.y, ang + (Math.random() - 0.5) * 0.2, this.dmg,
-                            'enemy')); } } }
-                collideObs(nx, ny, obs) { for (let o of obs) { if (nx - this.r < o.x + o.w && nx + this.r > o.x && ny -
-                            this.r < o.y + o.h && ny + this.r > o.y) return true; } return false; }
+                            this.bTimer = 0; } } else if (this.type === 'turret') { if (dist < this.atkR && this.atkTimer <= 0) { this.atkTimer = this.atkCd;
+                            bullets.push(new Bullet(this.x, this.y, ang + (Math.random() - 0.5) * 0.2, this.dmg, 'enemy')); } } else { if (dist < this.atkR && this.atkTimer <= 0) { this.atkTimer = this.atkCd; let sp = (Math.random() - 0.5) * 0.2;
+                            bullets.push(new Bullet(this.x, this.y, ang + sp, this.dmg, 'enemy')); } } } else if (this.type === 'boss' && this.shoots) { if (dist < this.atkR && this.atkTimer <= 0) { this.atkTimer = this.atkCd;
+                        bullets.push(new Bullet(this.x, this.y, ang + (Math.random() - 0.5) * 0.2, this.dmg, 'enemy')); } } }
+                collideObs(nx, ny, obs) { for (let o of obs) { if (nx - this.r < o.x + o.w && nx + this.r > o.x && ny - this.r < o.y + o.h && ny + this.r > o.y) return true; } return false; }
                 draw(ctx, cx, cy) { if (!this.alive) return; let sx = this.x - cx,
                         sy = this.y - cy;
                     ctx.save();
-                    ctx.translate(sx, sy); if (this.type === 'boss') {
-                        // Ангел Смерти (без изменений)
-                        let bossY = this.floatY;
-                        ctx.translate(0, bossY);
-                        let glowIntensity = 0.5 + Math.sin(performance.now() * 0.005) * 0.3;
+                    ctx.translate(sx, sy); if (this.type === 'boss') { let bossY = this.floatY;
+                        ctx.translate(0, bossY); let glowIntensity = 0.5 + Math.sin(performance.now() * 0.005) * 0.3;
                         ctx.fillStyle = `rgba(255, 100, 0, ${glowIntensity})`;
                         ctx.beginPath();
                         ctx.arc(0, -this.r - 15, this.r * 1.2, 0, Math.PI * 2);
@@ -965,19 +957,12 @@
                         ctx.beginPath();
                         ctx.arc(0, -this.r - 20, 15, 0, Math.PI * 2);
                         ctx.stroke();
-                        for (let i = 0; i < 8; i++) {
-                            let angle = (i / 8) * Math.PI * 2 + performance.now() * 0.002;
-                            let spikeX = Math.cos(angle) * 16;
-                            let spikeY = Math.sin(angle) * 16 - this.r - 20;
+                        for (let i = 0; i < 8; i++) { let angle = (i / 8) * Math.PI * 2 + performance.now() * 0.002; let spikeX = Math.cos(angle) * 16; let spikeY = Math.sin(angle) * 16 - this.r - 20;
                             ctx.fillStyle = '#ff6600';
-                            ctx.fillRect(spikeX - 1, spikeY - 4, 2, 8);
-                        }
+                            ctx.fillRect(spikeX - 1, spikeY - 4, 2, 8); }
                         ctx.fillStyle = '#333';
                         ctx.fillRect(15, -15, 25, 10);
-                        ctx.fillStyle = '#555';
-                        for (let i = 0; i < 4; i++) {
-                            ctx.fillRect(20 + i * 4, -18, 3, 4);
-                        }
+                        ctx.fillStyle = '#555'; for (let i = 0; i < 4; i++) { ctx.fillRect(20 + i * 4, -18, 3, 4); }
                         ctx.fillStyle = '#ffd700';
                         ctx.fillRect(18, -16, 2, 2);
                         ctx.fillRect(28, -16, 2, 2);
@@ -1004,9 +989,7 @@
                         ctx.fillRect(-3, -2, 6, 6);
                         ctx.fillStyle = '#ffd700';
                         ctx.fillRect(-1, -4, 2, 10);
-                        ctx.fillRect(-3, 2, 6, 2);
-                    } else if (this.type === 'saw' || this.type === 'pistol' || this.type === 'minigun') { let scared =
-                            (this.type !== 'turret' && this.type !== 'boss' && this.stunT > 0);
+                        ctx.fillRect(-3, 2, 6, 2); } else if (this.type === 'saw' || this.type === 'pistol' || this.type === 'minigun') { let scared = (this.type !== 'turret' && this.type !== 'boss' && this.stunT > 0);
                         ctx.fillStyle = '#d4a574';
                         ctx.fillRect(-8, -4, 16, 12);
                         ctx.fillStyle = '#2c2c2c';
@@ -1022,8 +1005,7 @@
                             ctx.fillRect(-6, -11, 12, 2);
                             ctx.fillStyle = '#3a2a1a';
                             ctx.fillRect(-5, -13, 2, 5);
-                            ctx.fillRect(3, -13, 2, 5); } else if (this.type === 'minigun') { ctx.fillStyle =
-                            '#b08070';
+                            ctx.fillRect(3, -13, 2, 5); } else if (this.type === 'minigun') { ctx.fillStyle = '#b08070';
                             ctx.fillRect(-5, -12, 3, 2);
                             ctx.fillRect(2, -12, 3, 2); } if (scared) { ctx.fillStyle = '#fff';
                             ctx.fillRect(-5, -12, 4, 4);
@@ -1042,13 +1024,11 @@
                             ctx.fill(); } else if (this.type === 'pistol') { ctx.fillStyle = '#333';
                             ctx.fillRect(8, -6, 8, 3);
                             ctx.fillStyle = '#111';
-                            ctx.fillRect(14, -5, 3, 5); } else if (this.type === 'minigun') { ctx.fillStyle =
-                            '#333';
+                            ctx.fillRect(14, -5, 3, 5); } else if (this.type === 'minigun') { ctx.fillStyle = '#333';
                             ctx.fillRect(8, -6, 12, 5);
                             ctx.fillStyle = '#111';
                             ctx.fillRect(18, -6, 4, 10);
-                            ctx.fillStyle = '#666'; for (let i = 0; i < 4; i++) ctx.fillRect(14 + i * 3, -8, 2,
-                            3); } if (scared) { let shx = Math.sin(performance.now() * 0.05) * 1.5,
+                            ctx.fillStyle = '#666'; for (let i = 0; i < 4; i++) ctx.fillRect(14 + i * 3, -8, 2, 3); } if (scared) { let shx = Math.sin(performance.now() * 0.05) * 1.5,
                                 shy = Math.cos(performance.now() * 0.05) * 1.5;
                             ctx.translate(shx, shy);
                             ctx.fillStyle = '#f0c8a0';
@@ -1073,10 +1053,8 @@
                         ctx.fillStyle = '#f00';
                         ctx.fillRect(-bw / 2, by, bw * (this.hp / this.maxHp), bh); }
                     ctx.restore(); }
-                burn(fire) { if (!this.alive || this.type === 'turret' || this.type === 'boss') return; for (let f of fire) { if (Math.hypot(f
-                            .x - this.x, f.y - this.y) < f.r + this.r) { this.alive = false;
-                        burnSnd(); for (let i = 0; i < 8; i++) parts.push(new Particle(this.x, this.y, Math.random() *
-                                Math.PI * 2, 80, '#000', 0.6));
+                burn(fire) { if (!this.alive || this.type === 'turret' || this.type === 'boss') return; for (let f of fire) { if (Math.hypot(f.x - this.x, f.y - this.y) < f.r + this.r) { this.alive = false;
+                        burnSnd(); for (let i = 0; i < 8; i++) parts.push(new Particle(this.x, this.y, Math.random() * Math.PI * 2, 80, '#000', 0.6));
                         this.color = '#222';
                         this.r = 8;
                         player.burnedEnemy = true;
@@ -1092,9 +1070,7 @@
                     this.alive = true;
                     this.r = 3;
                     this.stunD = sd; } up(dt, wW, wH) { this.x += Math.cos(this.angle) * this.spd * dt;
-                    this.y += Math.sin(this.angle) * this.spd * dt; if (this.x < -50 || this.x > wW + 50 || this.y <
-                        -50 || this.y > wH + 50) this.alive = false; } draw(ctx, cx, cy) { if (!this.alive) return;
-                    let sx = this.x - cx,
+                    this.y += Math.sin(this.angle) * this.spd * dt; if (this.x < -50 || this.x > wW + 50 || this.y < -50 || this.y > wH + 50) this.alive = false; } draw(ctx, cx, cy) { if (!this.alive) return; let sx = this.x - cx,
                         sy = this.y - cy;
                     ctx.fillStyle = this.owner === 'player' ? '#fc0' : '#f44';
                     ctx.beginPath();
@@ -1114,8 +1090,7 @@
                     this.alive = true; } up(dt) { this.life -= dt; if (this.life <= 0) { this.alive = false; return; }
                     this.x += Math.cos(this.angle) * this.spd * dt;
                     this.y += Math.sin(this.angle) * this.spd * dt;
-                    this.spd *= 0.96; } draw(ctx, cx, cy) { if (!this.alive) return; let a = Math.max(0, this.life / this
-                        .max);
+                    this.spd *= 0.96; } draw(ctx, cx, cy) { if (!this.alive) return; let a = Math.max(0, this.life / this.max);
                     ctx.fillStyle = this.color;
                     ctx.globalAlpha = a;
                     ctx.fillRect(this.x - cx - 2, this.y - cy - 2, 4, 4);
@@ -1127,10 +1102,10 @@
                 blood = [],
                 organs = [],
                 thrown = [],
-                thrownObjects = [], // новый массив для брошенных предметов
+                thrownObjects = [],
                 fires = [],
                 obstacles = [],
-                corpses = []; // массив трупов
+                corpses = [];
             let waveNum = 1,
                 waveLeft = 0,
                 wavePause = 0,
@@ -1139,23 +1114,17 @@
             let corrProg = 0,
                 corrT = 0,
                 corrIdx = 0;
-            const corrTexts = ['Они заслужили боль.', 'Ты не сможешь остановиться.', 'Убей их всех. Разорви.',
-                'Тишина это слабость.', 'Кровь очищает.', 'Иди вперёд. Там твоя сцена.', 'Маска скрывает правду.',
-                'Часы тикают. Тик так.', 'Гильзы в ботинке... неприятно.', 'Слушай голос внутри.' // убрали "Ты — Илерт?"
-            ];
+            const corrTexts = ['Они заслужили боль.', 'Ты не сможешь остановиться.', 'Убей их всех. Разорви.', 'Тишина это слабость.', 'Кровь очищает.', 'Иди вперёд. Там твоя сцена.', 'Маска скрывает правду.', 'Часы тикают. Тик так.', 'Гильзы в ботинке... неприятно.', 'Слушай голос внутри.'];
             const secretPhrase = 'Ты — Илерт?';
             let wW = CORR_W,
                 wH = CORR_H,
                 curWorld = 'corridor',
                 bossAppear = false;
 
-            function genObs() { obstacles = []; let types = [{ w: 40, h: 40, color: '#5c4033' }, { w: 30, h: 30,
-                    color: '#4a4a4a' }, { w: 50, h: 25, color: '#6b5b3e' }, { w: 35, h: 50, color: '#3e3e3e' }];
-            for (let i = 0; i < 10; i++) { let t, x, y; do { t = types[Math.floor(Math.random() * types.length)];
+            function genObs() { obstacles = []; let types = [{ w: 40, h: 40, color: '#5c4033' }, { w: 30, h: 30, color: '#4a4a4a' }, { w: 50, h: 25, color: '#6b5b3e' }, { w: 35, h: 50, color: '#3e3e3e' }]; for (let i = 0; i < 10; i++) { let t, x, y; do { t = types[Math.floor(Math.random() * types.length)];
                     x = 100 + Math.random() * (ARENA_W - 200);
-                    y = 100 + Math.random() * (ARENA_H - 200); } while (Math.hypot(x - player.x, y - player.y) <
-                100);
-            obstacles.push({ x, y, w: t.w, h: t.h, color: t.color }); } }
+                    y = 100 + Math.random() * (ARENA_H - 200); } while (Math.hypot(x - player.x, y - player.y) < 100);
+                obstacles.push({ x, y, w: t.w, h: t.h, color: t.color }); } }
 
             function resetGame() { player = new Player(80, CORR_H / 2);
                 enemies = [];
@@ -1191,7 +1160,11 @@
                 adState = null;
                 lastMad = 0;
                 bossAppearTimer = 0;
-                secretShown = false; }
+                secretShown = false;
+                playerPerks = [];
+                perkChoice = null;
+                perkChoiceFlash = 0;
+                activeHeroPhrases = []; }
 
             function enterArena() { curWorld = 'arena';
                 wW = ARENA_W;
@@ -1218,111 +1191,59 @@
                 adState = null;
                 lastMad = 0;
                 bossAppearTimer = 0;
-                secretShown = false; }
+                secretShown = false;
+                playerPerks = [];
+                perkChoice = null;
+                perkChoiceFlash = 0;
+                activeHeroPhrases = []; }
 
             function spawnWave() { waveActive = true;
-                bossAppear = false; let ds = diffSet[diff]; let base = Math.floor(waveNum * ds.waveA); let saw = Math.max(
-                        1, Math.floor(base * 0.5)),
+                bossAppear = false; let ds = diffSet[diff]; let base = Math.floor(waveNum * ds.waveA); let saw = Math.max(1, Math.floor(base * 0.5)),
                     pistol = Math.max(1, Math.floor(base * 0.3)),
                     mini = Math.max(0, Math.floor(base * 0.2));
                 waveLeft = saw + pistol + mini; if (waveNum % BOSS_INT === 0) { waveLeft++;
-                    bossAppear = true; } let spawns = []; for (let i = 0; i < saw; i++) spawns.push('saw'); for (let i =
-                    0; i < pistol; i++) spawns.push('pistol'); for (let i = 0; i < mini; i++) spawns.push(
-                    'minigun'); if (bossAppear) { spawns.push('boss');
+                    bossAppear = true; } let spawns = []; for (let i = 0; i < saw; i++) spawns.push('saw'); for (let i = 0; i < pistol; i++) spawns.push('pistol'); for (let i = 0; i < mini; i++) spawns.push('minigun'); if (bossAppear) { spawns.push('boss');
                     bossAppearTimer = 2.0;
-                    bossAppearSnd(); } for (let t of spawns) { let sx, sy; let side = Math.floor(Math.random() *
-                        4); if (side === 0) { sx = Math.random() * wW;
+                    bossAppearSnd(); } for (let t of spawns) { let sx, sy; let side = Math.floor(Math.random() * 4); if (side === 0) { sx = Math.random() * wW;
                         sy = -50; } else if (side === 1) { sx = wW + 50;
                         sy = Math.random() * wH; } else if (side === 2) { sx = Math.random() * wW;
                         sy = wH + 50; } else { sx = -50;
                         sy = Math.random() * wH; }
                     enemies.push(new Enemy(sx, sy, t, ds)); } if (bossAppear) bossSnd(); }
 
-            function checkColl() { for (let b of bullets) { if (!b.alive || b.owner !== 'player') continue; for (let e of
-                        enemies) { if (!e.alive) continue; if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + b.r) { b.alive =
-                            false; let crit = Math.random() < CRIT_C; let dmg = crit ? b.dmg * 2 : b.dmg;
+            function checkColl() { for (let b of bullets) { if (!b.alive || b.owner !== 'player') continue; for (let e of enemies) { if (!e.alive) continue; if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + b.r) { b.alive = false; let crit = Math.random() < CRIT_C; let dmg = crit ? b.dmg * 2 : b.dmg;
                         e.takeDmg(dmg, player, parts, 'deagle');
-                        blood.push(new Blood(e.x + (Math.random() - 0.5) * 15, e.y + (Math.random() - 0.5) * 15, 2 +
-                            Math.random() * 6)); break; } } } for (let b of bullets) { if (!b.alive || b.owner !==
-                        'enemy') continue; if (Math.hypot(b.x - player.x, b.y - player.y) < player.w / 2 + b.r) { b
-                        .alive = false;
+                        blood.push(new Blood(e.x + (Math.random() - 0.5) * 15, e.y + (Math.random() - 0.5) * 15, 2 + Math.random() * 6)); break; } } } for (let b of bullets) { if (!b.alive || b.owner !== 'enemy') continue; if (Math.hypot(b.x - player.x, b.y - player.y) < player.w / 2 + b.r) { b.alive = false;
                     player.takeDamage(b.dmg);
-                    hitSnd(); if (b.stunD > 0) player.stunT = b.stunD; for (let i = 0; i < 3; i++) parts.push(new
-                        Particle(player.x, player.y, Math.random() * Math.PI * 2, 80, '#f44', 0.3));
-                    blood.push(new Blood(player.x + (Math.random() - 0.5) * 15, player.y + (Math.random() - 0.5) *
-                        15, 2 + Math.random() * 5)); } }
-                for (let t of thrown) { if (!t.alive) continue; for (let e of
-                        enemies) { if (!e.alive) continue; if (Math.hypot(t.x - e.x, t.y - e.y) < e.r + t.r) { t.alive =
-                            false; if (e.type !== 'turret' && e.type !== 'boss') { e.stunT = ORGAN_STUN;
-                        hitSnd(); for (let i = 0; i < 3; i++) parts.push(new Particle(e.x, e.y, Math.random() * Math
-                                .PI * 2, 100, '#fff', 0.3)); } else { for (let i = 0; i < 3; i++) parts.push(new
-                                Particle(e.x, e.y, Math.random() * Math.PI * 2, 60, '#aaa', 0.3));
+                    hitSnd(); if (b.stunD > 0) player.stunT = b.stunD; for (let i = 0; i < 3; i++) parts.push(new Particle(player.x, player.y, Math.random() * Math.PI * 2, 80, '#f44', 0.3));
+                    blood.push(new Blood(player.x + (Math.random() - 0.5) * 15, player.y + (Math.random() - 0.5) * 15, 2 + Math.random() * 5)); } }
+                for (let t of thrown) { if (!t.alive) continue; for (let e of enemies) { if (!e.alive) continue; if (Math.hypot(t.x - e.x, t.y - e.y) < e.r + t.r) { t.alive = false; if (e.type !== 'turret' && e.type !== 'boss') { e.stunT = ORGAN_STUN;
+                        hitSnd(); for (let i = 0; i < 3; i++) parts.push(new Particle(e.x, e.y, Math.random() * Math.PI * 2, 100, '#fff', 0.3)); } else { for (let i = 0; i < 3; i++) parts.push(new Particle(e.x, e.y, Math.random() * Math.PI * 2, 60, '#aaa', 0.3));
                         if (e.type === 'turret') player.threwOrganAtTurret = true;
                         unlockAch('machine_no_fear'); } break; } } }
-                // Брошенные предметы (декор/трупы)
                 for (let obj of thrownObjects) { if (!obj.alive) continue; for (let e of enemies) { if (!e.alive) continue; if (Math.hypot(obj.x - e.x, obj.y - e.y) < e.r + obj.r) { obj.alive = false;
                             e.takeDmg(obj.damage, player, parts, 'object');
-                            e.stunT = 0.8; // оглушение
-                            for (let i = 0; i < 5; i++) parts.push(new Particle(e.x, e.y, Math.random()*Math.PI*2, 80, '#8B7355', 0.5));
-                            break; } } }
-                for (let i = organs.length - 1; i >= 0; i--) { let o =
-                        organs[i]; if (o.life > 0 && Math.hypot(o.x - player.x, o.y - player.y) < 20) { player.organs++;
+                            e.stunT = 0.8; for (let i = 0; i < 5; i++) parts.push(new Particle(e.x, e.y, Math.random() * Math.PI * 2, 80, '#8B7355', 0.5)); break; } } }
+                for (let i = organs.length - 1; i >= 0; i--) { let o = organs[i]; if (o.life > 0 && Math.hypot(o.x - player.x, o.y - player.y) < 20) { player.organs++;
                         organs.splice(i, 1); } }
-                // обыск трупов (U)
-                if (keys['u'] && corpses.length > 0) {
-                    for (let i = corpses.length-1; i >= 0; i--) {
-                        let c = corpses[i];
-                        if (!c.looted && Math.hypot(c.x - player.x, c.y - player.y) < 40) {
-                            if (Math.random() < LOOT_CHANCE) {
-                                let types = ['eye','brain','skull','guts','trachea'];
-                                let t = types[Math.floor(Math.random()*types.length)];
-                                organs.push(new Organ(c.x + (Math.random()-0.5)*20, c.y + (Math.random()-0.5)*20, t));
-                                addNotification('Орган из трупа', '🫀');
-                            } else {
-                                addNotification('Пусто', '🦴');
-                            }
-                            c.looted = true;
-                            corpses.splice(i,1); // труп исчезает после обыска
-                            break;
-                        }
-                    }
-                    keys['u'] = false;
-                }
-                // подбор декора/трупов на Q
-                if (keys['q'] && !player.holdingObject) {
-                    // сначала ищем ближайший труп (не разграбленный)
-                    let nearestCorpse = null;
-                    let minDist = 50;
-                    for (let c of corpses) {
-                        let d = Math.hypot(c.x - player.x, c.y - player.y);
-                        if (d < minDist && !c.looted) { minDist = d; nearestCorpse = c; }
-                    }
-                    if (nearestCorpse) {
-                        player.holdingObject = { type: 'corpse' };
-                        corpses.splice(corpses.indexOf(nearestCorpse),1);
-                        keys['q'] = false;
-                    } else {
-                        // ищем препятствие
-                        for (let i = obstacles.length-1; i >= 0; i--) {
-                            let o = obstacles[i];
-                            let cx = o.x + o.w/2, cy = o.y + o.h/2;
-                            if (Math.hypot(cx - player.x, cy - player.y) < 50) {
-                                player.holdingObject = { type: 'box' };
-                                obstacles.splice(i,1);
-                                keys['q'] = false;
-                                break;
-                            }
-                        }
-                    }
-                }
+                if (keys['u'] && corpses.length > 0) { for (let i = corpses.length - 1; i >= 0; i--) { let c = corpses[i]; if (!c.looted && Math.hypot(c.x - player.x, c.y - player.y) < 40) { if (Math.random() < LOOT_CHANCE) { let types = ['eye', 'brain', 'skull', 'guts', 'trachea']; let t = types[Math.floor(Math.random() * types.length)];
+                            organs.push(new Organ(c.x + (Math.random() - 0.5) * 20, c.y + (Math.random() - 0.5) * 20, t));
+                            addNotification('Орган из трупа', '🫀'); } else { addNotification('Пусто', '🦴'); }
+                        c.looted = true;
+                        corpses.splice(i, 1); break; } }
+                    keys['u'] = false; }
+                if (keys['q'] && !player.holdingObject) { let nearestCorpse = null; let minDist = 50; for (let c of corpses) { let d = Math.hypot(c.x - player.x, c.y - player.y); if (d < minDist && !c.looted) { minDist = d;
+                            nearestCorpse = c; } } if (nearestCorpse) { player.holdingObject = { type: 'corpse' };
+                        corpses.splice(corpses.indexOf(nearestCorpse), 1);
+                        keys['q'] = false; } else { for (let i = obstacles.length - 1; i >= 0; i--) { let o = obstacles[i]; let cx = o.x + o.w / 2,
+                            cy = o.y + o.h / 2; if (Math.hypot(cx - player.x, cy - player.y) < 50) { player.holdingObject = { type: 'box' };
+                            obstacles.splice(i, 1);
+                            keys['q'] = false; break; } } } }
                 for (let e of enemies) e.burn(fires);
-                // трупы с истекшим временем удаляются
-                corpses = corpses.filter(c => c.life > 0);
-            }
+                corpses = corpses.filter(c => c.life > 0); }
 
-            function upHi() { let hs = hiScore[diff]; if (gameScore > hs.s) hs.s = Math.floor(gameScore); if (waveNum >
-                    hs.w) hs.w = waveNum;
-            localStorage.setItem('alert_hi', JSON.stringify(hiScore)); }
+            function upHi() { let hs = hiScore[diff]; if (gameScore > hs.s) hs.s = Math.floor(gameScore); if (waveNum > hs.w) hs.w = waveNum;
+                localStorage.setItem('alert_hi', JSON.stringify(hiScore)); }
 
             function drawMadIcon(ctx, x, y, lvl) { ctx.fillStyle = '#f0d0a0';
                 ctx.fillRect(x, y, 16, 16); if (lvl <= 1) { ctx.fillStyle = '#000';
@@ -1332,8 +1253,7 @@
                     ctx.fillRect(x + 10, y + 4, 3, 3); } else { ctx.fillStyle = '#f00';
                     ctx.fillRect(x + 2, y + 3, 4, 5);
                     ctx.fillRect(x + 10, y + 3, 4, 5); }
-                ctx.fillStyle = '#000'; if (lvl === 0) { ctx.fillRect(x + 5, y + 11, 6, 2); } else if (lvl === 1) { ctx
-                    .fillRect(x + 4, y + 10, 2, 2);
+                ctx.fillStyle = '#000'; if (lvl === 0) { ctx.fillRect(x + 5, y + 11, 6, 2); } else if (lvl === 1) { ctx.fillRect(x + 4, y + 10, 2, 2);
                     ctx.fillRect(x + 6, y + 11, 4, 2);
                     ctx.fillRect(x + 10, y + 10, 2, 2); } else if (lvl === 2) { ctx.fillStyle = '#f00';
                     ctx.fillRect(x + 4, y + 10, 8, 3);
@@ -1383,10 +1303,7 @@
                 ctx.fillStyle = '#777';
                 ctx.font = '10px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText('Кликните на сложность для смены', VW / 2, sy + 210); return { play: { x: bx - bw / 2,
-                        y: sy - bh / 2, w: bw, h: bh }, how: { x: bx - bw / 2, y: sy + 55 - bh / 2, w: bw,
-                        h: bh }, diff: { x: bx - bw / 2, y: sy + 110 - bh / 2, w: bw, h: bh }, ach: { x: bx -
-                        bw / 2, y: sy + 165 - bh / 2, w: bw, h: bh } }; }
+                ctx.fillText('Кликните на сложность для смены', VW / 2, sy + 210); return { play: { x: bx - bw / 2, y: sy - bh / 2, w: bw, h: bh }, how: { x: bx - bw / 2, y: sy + 55 - bh / 2, w: bw, h: bh }, diff: { x: bx - bw / 2, y: sy + 110 - bh / 2, w: bw, h: bh }, ach: { x: bx - bw / 2, y: sy + 165 - bh / 2, w: bw, h: bh } }; }
 
             function drawHowTo() { ctx.fillStyle = 'rgba(0,0,0,0.9)';
                 ctx.fillRect(0, 0, VW, VH);
@@ -1395,13 +1312,8 @@
                 ctx.textAlign = 'center';
                 ctx.fillText('КАК ИГРАТЬ', VW / 2, 60);
                 ctx.fillStyle = '#ccc';
-                ctx.font = '13px monospace';
-                ['WASD/Стрелки — передвижение', 'Мышь — прицеливание', 'ЛКМ — Deagle', 'ПКМ — Клюшка (жёстко)', 'R — перезарядка',
-                    'K — убрать гильзы', 'SHIFT — рывок', 'E — бросить орган', 'Q — подобрать/бросить предмет или труп',
-                    'U — обыскать труп', '1/2 или колёсико — смена оружия', 'Английская раскладка обязательна!'
-                ].forEach((l, i) => ctx.fillText(l, VW / 2, 100 + i * 22));
-                drawBtn(VW / 2, VH - 70, 200, 40, 'НАЗАД', '#333', '#666', '#ccc'); return { back: { x: VW / 2 - 100,
-                        y: VH - 90, w: 200, h: 40 } }; }
+                ctx.font = '13px monospace'; ['WASD/Стрелки — передвижение', 'Мышь — прицеливание', 'ЛКМ — Deagle', 'ПКМ — Клюшка (жёстко)', 'R — перезарядка', 'K — убрать гильзы', 'SHIFT — рывок', 'E — бросить орган', 'Q — подобрать/бросить предмет или труп', 'U — обыскать труп', '1/2 или колёсико — смена оружия', 'Английская раскладка обязательна!'].forEach((l, i) => ctx.fillText(l, VW / 2, 100 + i * 22));
+                drawBtn(VW / 2, VH - 70, 200, 40, 'НАЗАД', '#333', '#666', '#ccc'); return { back: { x: VW / 2 - 100, y: VH - 90, w: 200, h: 40 } }; }
 
             function drawAchScreen() { ctx.fillStyle = 'rgba(0,0,0,0.9)';
                 ctx.fillRect(0, 0, VW, VH);
@@ -1409,26 +1321,19 @@
                 ctx.font = 'bold 28px monospace';
                 ctx.textAlign = 'center';
                 ctx.fillText('ДОСТИЖЕНИЯ', VW / 2, 40);
-                ctx.font = '14px monospace'; let y = 80; for (let ach of ACHIEVEMENTS) { let unlocked = unlockedAch[ach
-                        .id
-                    ];
+                ctx.font = '14px monospace'; let y = 80; for (let ach of ACHIEVEMENTS) { let unlocked = unlockedAch[ach.id];
                     ctx.fillStyle = unlocked ? '#ff0' : '#555';
                     ctx.fillText(`${ach.icon} ${ach.name} - ${ach.desc} ${unlocked?'✓':''}`, VW / 2 - 250, y);
                     y += 30; }
-                drawBtn(VW / 2, VH - 50, 200, 40, 'В МЕНЮ', '#333', '#666', '#ccc'); return { back: { x: VW / 2 -
-                        100, y: VH - 70, w: 200, h: 40 } }; }
+                drawBtn(VW / 2, VH - 50, 200, 40, 'В МЕНЮ', '#333', '#666', '#ccc'); return { back: { x: VW / 2 - 100, y: VH - 70, w: 200, h: 40 } }; }
 
             function drawCorrText() { if (curWorld !== 'corridor') return;
                 ctx.fillStyle = 'rgba(255,255,255,0.5)';
                 ctx.font = 'italic 22px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText(corrTexts[corrIdx], VW / 2, VH / 2 + 60);
-                // секретная фраза при активации
-                if (secretShown) {
-                    ctx.fillStyle = '#f00';
+                ctx.fillText(corrTexts[corrIdx], VW / 2, VH / 2 + 60); if (secretShown) { ctx.fillStyle = '#f00';
                     ctx.font = 'bold 28px monospace';
-                    ctx.fillText(secretPhrase, VW / 2, VH / 2 + 100);
-                } }
+                    ctx.fillText(secretPhrase, VW / 2, VH / 2 + 100); } }
 
             function drawDeath() { ctx.fillStyle = 'rgba(0,0,0,0.9)';
                 ctx.fillRect(0, 0, VW, VH);
@@ -1438,9 +1343,7 @@
                 ctx.fillText('ТЫ ПАЛ', VW / 2, VH / 2 - 110); let killCount = player.killCount,
                     score = Math.floor(gameScore),
                     lvl = madnessLevel(player.maxMad),
-                    wave = waveNum; let rating = 'F'; if (score >= 100000) rating = 'P'; else if (score >= 40000)
-                    rating = 'S'; else if (score >= 15000) rating = 'A'; else if (score >= 5000) rating =
-                    'B'; else if (killCount > 1) rating = 'C';
+                    wave = waveNum; let rating = 'F'; if (score >= 100000) rating = 'P'; else if (score >= 40000) rating = 'S'; else if (score >= 15000) rating = 'A'; else if (score >= 5000) rating = 'B'; else if (killCount > 1) rating = 'C';
                 ctx.fillStyle = '#fff';
                 ctx.font = '20px monospace';
                 ctx.fillText(`Убийств: ${killCount}`, VW / 2, VH / 2 - 60);
@@ -1450,9 +1353,7 @@
                 ctx.font = 'bold 36px monospace';
                 ctx.fillText(`Оценка: ${rating}`, VW / 2, VH / 2 + 50);
                 drawBtn(VW / 2, VH / 2 + 110, 200, 40, 'ЗАНОВО', '#800', '#c00', '#fff');
-                drawBtn(VW / 2, VH / 2 + 160, 200, 40, 'В МЕНЮ', '#333', '#666', '#ccc'); return { retry: { x: VW / 2 -
-                        100, y: VH / 2 + 90, w: 200, h: 40 }, menu: { x: VW / 2 - 100, y: VH / 2 + 140,
-                        w: 200, h: 40 } }; }
+                drawBtn(VW / 2, VH / 2 + 160, 200, 40, 'В МЕНЮ', '#333', '#666', '#ccc'); return { retry: { x: VW / 2 - 100, y: VH / 2 + 90, w: 200, h: 40 }, menu: { x: VW / 2 - 100, y: VH / 2 + 140, w: 200, h: 40 } }; }
 
             function drawPause() { ctx.fillStyle = 'rgba(0,0,0,0.7)';
                 ctx.fillRect(0, 0, VW, VH);
@@ -1461,19 +1362,40 @@
                 ctx.textAlign = 'center';
                 ctx.fillText('ПАУЗА', VW / 2, VH / 2 - 60); let bx = VW / 2;
                 drawBtn(bx, VH / 2, 220, 40, 'ПРОДОЛЖИТЬ', '#333', '#666', '#ccc');
-                drawBtn(bx, VH / 2 + 50, 220, 40, 'ВЫЙТИ В МЕНЮ', '#800', '#c00', '#fff'); return { resume: { x: bx -
-                        110, y: VH / 2 - 20, w: 220, h: 40 }, quit: { x: bx - 110, y: VH / 2 + 30, w: 220,
-                    h: 40 } }; }
+                drawBtn(bx, VH / 2 + 50, 220, 40, 'ВЫЙТИ В МЕНЮ', '#800', '#c00', '#fff'); return { resume: { x: bx - 110, y: VH / 2 - 20, w: 220, h: 40 }, quit: { x: bx - 110, y: VH / 2 + 30, w: 220, h: 40 } }; }
+
+            function drawPerkChoice() {
+                if (!perkChoice || !perkChoice.active) return;
+                // затемнение
+                ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                ctx.fillRect(0, 0, VW, VH);
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = 'bold 32px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('ВЫБЕРИ ПЕРК', VW / 2, VH / 2 - 140);
+                let options = perkChoice.options;
+                let btnW = 280,
+                    btnH = 70,
+                    gap = 90,
+                    startY = VH / 2 - 80;
+                for (let i = 0; i < options.length; i++) {
+                    let perk = options[i];
+                    let y = startY + i * gap;
+                    drawBtn(VW / 2, y, btnW, btnH, `${perk.icon} ${perk.name}`, '#222', '#444', '#fff');
+                    ctx.fillStyle = '#ccc';
+                    ctx.font = '13px monospace';
+                    ctx.fillText(perk.desc, VW / 2, y + 30);
+                }
+                return options; // не используется для кликов, но оставим
+            }
 
             function drawArena() { ctx.fillStyle = '#1a1a1a';
                 ctx.fillRect(-cam.x, -cam.y, wW, wH);
                 ctx.strokeStyle = '#252525';
-                ctx.lineWidth = 1; for (let x = Math.floor(cam.x / 60) * 60; x < cam.x + VW + 60; x += 60) { ctx
-                        .beginPath();
+                ctx.lineWidth = 1; for (let x = Math.floor(cam.x / 60) * 60; x < cam.x + VW + 60; x += 60) { ctx.beginPath();
                     ctx.moveTo(x - cam.x, -cam.y);
                     ctx.lineTo(x - cam.x, wH - cam.y);
-                    ctx.stroke(); } for (let y = Math.floor(cam.y / 60) * 60; y < cam.y + VW + 60; y += 60) { ctx
-                        .beginPath();
+                    ctx.stroke(); } for (let y = Math.floor(cam.y / 60) * 60; y < cam.y + VW + 60; y += 60) { ctx.beginPath();
                     ctx.moveTo(-cam.x, y - cam.y);
                     ctx.lineTo(wW - cam.x, y - cam.y);
                     ctx.stroke(); }
@@ -1500,41 +1422,39 @@
                 ctx.fillStyle = '#fff';
                 ctx.font = '11px monospace';
                 ctx.textAlign = 'left';
-                ctx.fillText(`HP: ${Math.max(0,Math.round(player.hp))}/${player.maxHp}`, hx + 4, hy + 12); let sy = hy +
-                    hpH + 10;
+                ctx.fillText(`HP: ${Math.max(0,Math.round(player.hp))}/${player.maxHp}`, hx + 4, hy + 12); let sy = hy + hpH + 10;
                 ctx.fillStyle = '#ccc';
                 ctx.fillText(`💀 Очки: ${Math.floor(player.madPts)}`, hx, sy); let mad = madnessLevel(player.madPts);
                 drawMadIcon(ctx, hx + 115, sy - 11, mad.l);
                 ctx.fillStyle = '#ccc';
-                ctx.fillText(mad.n, hx + 135, sy); let mult = player.madMult >= 3 ?
-                    `ПСИХОТИЧЕСКИЙ x${player.madMult.toFixed(1)}` : player.madMult >= 2 ?
-                    `БЕЗУМНЫЙ x${player.madMult.toFixed(1)}` : player.madMult > 1 ?
-                    `ЯРОСТНЫЙ x${player.madMult.toFixed(1)}` : ''; if (mult) { ctx.fillStyle = '#f60';
+                ctx.fillText(mad.n, hx + 135, sy); let mult = player.madMult >= 3 ? `ПСИХОТИЧЕСКИЙ x${player.madMult.toFixed(1)}` : player.madMult >= 2 ? `БЕЗУМНЫЙ x${player.madMult.toFixed(1)}` : player.madMult > 1 ? `ЯРОСТНЫЙ x${player.madMult.toFixed(1)}` : ''; if (mult) { ctx.fillStyle = '#f60';
                     ctx.fillText(mult, hx, sy + 16); } if (player.styleTxt) { ctx.fillStyle = '#f00';
                     ctx.font = 'bold 14px monospace';
                     ctx.fillText(player.styleTxt, hx, sy + 32); } let wy = sy + 50;
-                if (player.holdingObject) {
-                    ctx.fillStyle = '#0ff';
-                    ctx.fillText(`ДЕРЖИТ: ${player.holdingObject.type==='corpse'?'ТРУП':'КОРОБКА'} [Q]`, hx, wy);
-                } else if (player.weapon === 'stick') { ctx.fillStyle = '#fc0';
+                if (player.holdingObject) { ctx.fillStyle = '#0ff';
+                    ctx.fillText(`ДЕРЖИТ: ${player.holdingObject.type==='corpse'?'ТРУП':'КОРОБКА'} [Q]`, hx, wy); } else if (player.weapon === 'stick') { ctx.fillStyle = '#fc0';
                     ctx.fillText('🏒 КЛЮШКА [1]', hx, wy); } else { ctx.fillStyle = '#fa0';
-                    ctx.fillText(`🔫 DEAGLE [2] (${player.deagleLoaded?1:0})`, hx, wy); if (player.deagleReload) ctx
-                        .fillText('ПЕРЕЗАРЯДКА...', hx + 180, wy); } let cy = wy + 18;
+                    ctx.fillText(`🔫 DEAGLE [2] (${player.deagleLoaded?1:0})`, hx, wy); if (player.deagleReload) ctx.fillText('ПЕРЕЗАРЯДКА...', hx + 180, wy); } let cy = wy + 18;
                 ctx.fillStyle = player.casings > 5 ? '#f44' : '#ca4';
                 ctx.fillText(`📀 Гильзы: ${player.casings} [K]`, hx, cy); if (player.shaking) { ctx.fillStyle = '#f80';
                     ctx.fillText('Очистка...', hx + 130, cy); } let dy = cy + 18,
                     dr = player.dashCd <= 0;
                 ctx.fillStyle = dr ? '#5f5' : '#555';
-                ctx.fillText(`👟 Рывок [SHIFT] ${dr?'ГОТОВ':'~'+player.dashCd.toFixed(1)+'с'}`, hx, dy); let ey = dy +
-                    18;
+                ctx.fillText(`👟 Рывок [SHIFT] ${dr?'ГОТОВ':'~'+player.dashCd.toFixed(1)+'с'}`, hx, dy); let ey = dy + 18;
                 ctx.fillStyle = '#fff';
                 ctx.fillText(`🫀 Органы: ${player.organs} [E]`, hx, ey);
+                // список активных перков
+                if (playerPerks.length > 0) {
+                    ctx.fillStyle = '#ffa';
+                    ctx.font = '9px monospace';
+                    let perksText = 'Перки: ' + playerPerks.map(p => p.icon).join(' ');
+                    ctx.fillText(perksText, hx, ey + 16);
+                }
                 ctx.fillStyle = '#ccc';
                 ctx.font = 'bold 13px monospace';
                 ctx.textAlign = 'center';
                 ctx.fillText(`ВОЛНА ${waveNum}`, VW / 2, VH - 25);
-                ctx.fillText(`Врагов: ${waveLeft}`, VW / 2, VH - 7); if (!waveActive && curWorld === 'arena') { ctx
-                    .fillStyle = '#fc0';
+                ctx.fillText(`Врагов: ${waveLeft}`, VW / 2, VH - 7); if (!waveActive && curWorld === 'arena') { ctx.fillStyle = '#fc0';
                     ctx.fillText(`Следующая волна через ${Math.ceil(wavePause)}...`, VW / 2, VH - 46); }
                 ctx.textAlign = 'left'; }
 
@@ -1543,71 +1463,74 @@
                 deathBtns = null,
                 pauseBtns = null,
                 achBtns = null;
-            canvas.addEventListener('click', e => { initAudio(); let m = getMouse(e); if (paused && pauseBtns) { if (
-                        isIn(m, pauseBtns.resume)) paused = false; else if (isIn(m, pauseBtns.quit)) { paused =
-                        false;
-                    state = STATE.MENU;
-                    enemies = [];
-                    bullets = [];
-                    parts = [];
-                    blood = [];
-                    organs = [];
-                    thrown = [];
-                    thrownObjects = [];
-                    fires = [];
-                    obstacles = [];
-                    corpses = []; } return; } if (state === STATE.MENU && menuBtns) { if (isIn(m, menuBtns
-                        .play)) { resetGame();
-                    state = STATE.CORR; } else if (isIn(m, menuBtns.how)) state = STATE.HOWTO; else if (isIn(m,
-                        menuBtns.diff)) { let d = ['easy', 'medium', 'hard', 'insane'];
-                    diff = d[(d.indexOf(diff) + 1) % d.length]; } else if (isIn(m, menuBtns.ach)) state = STATE
-                    .ACH; } else if (state === STATE.HOWTO && howBtns && isIn(m, howBtns.back)) state = STATE
-                .MENU; else if (state === STATE.DEAD && deathBtns) { if (isIn(m, deathBtns.retry)) { resetGame();
-                    state = STATE.CORR; } else if (isIn(m, deathBtns.menu)) { state = STATE.MENU;
-                    enemies = [];
-                    bullets = [];
-                    parts = [];
-                    blood = [];
-                    organs = [];
-                    thrown = [];
-                    thrownObjects = [];
-                    fires = [];
-                    obstacles = [];
-                    corpses = []; } } else if (state === STATE.ACH && achBtns && isIn(m, achBtns.back))
-            state = STATE.MENU; });
+            canvas.addEventListener('click', e => { initAudio(); let m = getMouse(e);
+                // Если активен выбор перка — обрабатываем клик по кнопкам
+                if (perkChoice && perkChoice.active) {
+                    let options = perkChoice.options;
+                    let btnW = 280, btnH = 70, gap = 90, startY = VH / 2 - 80;
+                    for (let i = 0; i < options.length; i++) {
+                        let y = startY + i * gap;
+                        let rect = { x: VW / 2 - btnW / 2, y: y - btnH / 2, w: btnW, h: btnH };
+                        if (isIn(m, rect)) {
+                            applyPerk(options[i]);
+                            return;
+                        }
+                    }
+                    return;
+                }
+                if (paused && pauseBtns) { if (isIn(m, pauseBtns.resume)) paused = false; else if (isIn(m, pauseBtns.quit)) { paused = false;
+                        state = STATE.MENU;
+                        enemies = [];
+                        bullets = [];
+                        parts = [];
+                        blood = [];
+                        organs = [];
+                        thrown = [];
+                        thrownObjects = [];
+                        fires = [];
+                        obstacles = [];
+                        corpses = []; } return; } if (state === STATE.MENU && menuBtns) { if (isIn(m, menuBtns.play)) { resetGame();
+                        state = STATE.CORR; } else if (isIn(m, menuBtns.how)) state = STATE.HOWTO; else if (isIn(m, menuBtns.diff)) { let d = ['easy', 'medium', 'hard', 'insane'];
+                        diff = d[(d.indexOf(diff) + 1) % d.length]; } else if (isIn(m, menuBtns.ach)) state = STATE.ACH; } else if (state === STATE.HOWTO && howBtns && isIn(m, howBtns.back)) state = STATE.MENU; else if (state === STATE.DEAD && deathBtns) { if (isIn(m, deathBtns.retry)) { resetGame();
+                        state = STATE.CORR; } else if (isIn(m, deathBtns.menu)) { state = STATE.MENU;
+                        enemies = [];
+                        bullets = [];
+                        parts = [];
+                        blood = [];
+                        organs = [];
+                        thrown = [];
+                        thrownObjects = [];
+                        fires = [];
+                        obstacles = [];
+                        corpses = []; } } else if (state === STATE.ACH && achBtns && isIn(m, achBtns.back)) state = STATE.MENU; });
 
             function isIn(m, r) { return m.x >= r.x && m.x <= r.x + r.w && m.y >= r.y && m.y <= r.y + r.h; }
 
             let lastTime = performance.now();
 
-            function loop(ts) { requestAnimationFrame(loop); let dt = (ts - lastTime) / 1000; if (dt <= 0) dt =
-                0.016; if (dt > 0.1) dt = 0.1;
+            function loop(ts) { requestAnimationFrame(loop); let dt = (ts - lastTime) / 1000; if (dt <= 0) dt = 0.016; if (dt > 0.1) dt = 0.1;
                 lastTime = ts;
                 updateRect();
                 ctx.clearRect(0, 0, VW, VH);
                 ctx.fillStyle = '#0a0a0a';
-                ctx.fillRect(0, 0, VW, VH); if (layoutW > 0) layoutW -= dt; if (healFlash > 0) healFlash -= dt; if (
-                    redScreen > 0) redScreen -= dt; if (bossAppearTimer > 0) bossAppearTimer -= dt; let curMad =
-                    madnessLevel(player ? player.madPts : 0).l; if (state === STATE.PLAY && curMad !== lastMad) { if (
-                        curMad > lastMad) ad('up'); else if (curMad < lastMad) ad('down');
-                    lastMad = curMad; } if (adState) { adState.timer += dt; if (adState.timer < 1.5) { adState.x = -
-                        400 + (80 + 400) * Math.min(1, adState.timer / 1.5);
-                    adState.alpha = Math.min(1, adState.timer / 1.2); } else if (adState.timer < adState.dur - 1.5) {
-                        adState.x = 80;
-                        adState.alpha = 1; } else if (adState.timer < adState.dur) { let p = (adState.timer - (
-                            adState.dur - 1.5)) / 1.5;
-                        adState.x = 80 - (80 + 400) * p;
-                        adState.alpha = 1 - p; } else { adState = null; } } for (let i = notifications.length - 1; i >=
-                    0; i--) { let n = notifications[i];
-                    n.timer -= dt; if (n.timer > 2.5) n.y += (80 - n.y) * 10 * dt; else n.alpha -= dt * 2; if (n
-                        .timer <= 0 || n.alpha < 0) notifications.splice(i, 1); }
-                // Секретная комбинация Space + B
-                if (keys[' '] && keys['b'] && !secretShown) {
-                    secretShown = true;
-                    addNotification(secretPhrase, '💀');
+                ctx.fillRect(0, 0, VW, VH); if (layoutW > 0) layoutW -= dt; if (healFlash > 0) healFlash -= dt; if (redScreen > 0) redScreen -= dt; if (perkChoiceFlash > 0) perkChoiceFlash -= dt; if (bossAppearTimer > 0) bossAppearTimer -= dt; let curMad = madnessLevel(player ? player.madPts : 0).l; if (state === STATE.PLAY && curMad !== lastMad) { if (curMad > lastMad) ad('up'); else if (curMad < lastMad) ad('down');
+                    lastMad = curMad;
+                    heroSpeak('madness'); } if (adState) { adState.timer += dt; if (adState.timer < 1.5) { adState.x = -400 + (80 + 400) * Math.min(1, adState.timer / 1.5);
+                    adState.alpha = Math.min(1, adState.timer / 1.2); } else if (adState.timer < adState.dur - 1.5) { adState.x = 80;
+                    adState.alpha = 1; } else if (adState.timer < adState.dur) { let p = (adState.timer - (adState.dur - 1.5)) / 1.5;
+                    adState.x = 80 - (80 + 400) * p;
+                    adState.alpha = 1 - p; } else { adState = null; } }
+                // обновление активных фраз героя
+                for (let i = activeHeroPhrases.length - 1; i >= 0; i--) {
+                    let p = activeHeroPhrases[i];
+                    p.timer -= dt;
+                    if (p.timer <= 0) activeHeroPhrases.splice(i, 1);
                 }
-                if (state === STATE.MENU) {
-                    menuBtns = drawMenu();
+                for (let i = notifications.length - 1; i >= 0; i--) { let n = notifications[i];
+                    n.timer -= dt; if (n.timer > 2.5) n.y += (80 - n.y) * 10 * dt; else n.alpha -= dt * 2; if (n.timer <= 0 || n.alpha < 0) notifications.splice(i, 1); }
+                if (keys[' '] && keys['b'] && !secretShown) { secretShown = true;
+                    addNotification(secretPhrase, '💀'); }
+                if (state === STATE.MENU) { menuBtns = drawMenu();
                     howBtns = null;
                     deathBtns = null;
                     pauseBtns = null;
@@ -1619,7 +1542,7 @@
                     menuBtns = null;
                     howBtns = null;
                     deathBtns = null;
-                    pauseBtns = null; } else if (state === STATE.CORR) { if (!paused) { player.x += 250 * dt;
+                    pauseBtns = null; } else if (state === STATE.CORR) { if (!paused && !perkChoice) { player.x += 250 * dt;
                         corrProg = player.x / (CORR_W - 200); if (corrProg > 1) corrProg = 1;
                         corrT += dt; if (corrT > 2.5) { corrT = 0;
                             corrIdx = (corrIdx + 1) % corrTexts.length; } }
@@ -1642,97 +1565,87 @@
                     ctx.fillText('ВЫХОД', dx, dy - 70);
                     player.draw(ctx, cam.x, cam.y);
                     drawCorrText();
-                    drawHUD(); if (!paused && player.x > CORR_W - 150) { enterArena();
-                        state = STATE.PLAY; } if (paused) { pauseBtns = drawPause(); } if (layoutW > 0) { ctx
-                        .fillStyle = '#ff0';
+                    drawHUD();
+                    if (perkChoice) drawPerkChoice();
+                    if (!paused && !perkChoice && player.x > CORR_W - 150) { enterArena();
+                        state = STATE.PLAY; } if (paused && !perkChoice) { pauseBtns = drawPause(); } if (layoutW > 0) { ctx.fillStyle = '#ff0';
                         ctx.font = '18px monospace';
                         ctx.textAlign = 'center';
-                        ctx.fillText('Бро, поменяй раскладку, лучше будет', VW / 2, VH - 50); } } else if (state ===
-                    STATE.PLAY) { if (!paused) { if (!waveActive) { wavePause -= dt; if (wavePause <= 0) { spawnWave
-                            ();
-                            wavePause = 0; if (player.hp < 50) { player.hp = Math.min(player.maxHp, player.hp +
-                                    100);
-                                healFlash = 2.0;
-                                angelSnd();
-                                player.styleTxt = 'РАЙ П0М0Г437 73Б3';
-                                player.styleT = 2;
-                                player.angelHealStreak++; if (player.angelHealStreak >= 13) unlockAch(
-                                    'parasite'); } else { player.angelHealStreak = 0; } } } else { let ae = enemies
-                                .filter(e => e.alive); if (ae.length === 0 && waveLeft <= 0) { waveActive =
-                                    false;
-                                waveNum++;
-                                wavePause = WAVE_PAUSE;
-                                enemies = [];
-                                bullets = []; if (waveNum >= 10) unlockAch('wave10'); if (waveNum >= 30)
-                                    unlockAch('tsunami'); } }
-                        player.up(dt, wW, wH, bullets, parts, blood, obstacles, thrown, fires, corpses); for (let e of
-                            enemies) e.up(dt, player, bullets, parts, wW, wH, obstacles); for (let b of bullets) b
-                            .up(dt, wW, wH); for (let p of parts) p.up(dt); for (let s of blood) s.up(dt); for (let o
-                                of organs) o.up(dt); for (let t of thrown) t.up(dt, wW, wH); for (let obj of thrownObjects) obj
-                            .up(dt, wW, wH); for (let f of fires) f.up(dt);
-                        blood = blood.filter(s => s.life > 0);
-                        organs = organs.filter(o => o.life > 0);
-                        thrown = thrown.filter(t => t.alive);
-                        thrownObjects = thrownObjects.filter(obj => obj.alive);
-                        fires = fires.filter(f => f.life > 0);
-                        // добавление трупов при смерти врагов (кроме боссов и турелей)
-                        for (let e of enemies) {
-                            if (!e.alive && e.type !== 'boss' && e.type !== 'turret' && !e._corpseCreated) {
-                                corpses.push(new Corpse(e.x, e.y, e.type));
-                                e._corpseCreated = true; // метка, чтобы не дублировать
-                            }
-                        }
-                        checkColl();
-                        enemies = enemies.filter(e => e.alive);
-                        bullets = bullets.filter(b => b.alive);
-                        parts = parts.filter(p => p.alive);
-                        waveLeft = enemies.filter(e => e.alive).length; }
-                    upCam(player.x, player.y, wW, wH, dt);
-                    drawArena(); for (let o of obstacles) { ctx.fillStyle = o.color;
-                        ctx.fillRect(o.x - cam.x, o.y - cam.y, o.w, o.h);
-                        ctx.strokeStyle = '#000';
-                        ctx.strokeRect(o.x - cam.x, o.y - cam.y, o.w, o.h); } for (let f of fires) f.draw(ctx, cam.x,
-                        cam.y); for (let s of blood) s.draw(ctx, cam.x, cam.y); for (let o of organs) o.draw(ctx, cam
-                        .x, cam.y); for (let t of thrown) t.draw(ctx, cam.x, cam.y); for (let obj of thrownObjects) obj.draw(ctx, cam.x, cam.y);
-                    for (let c of corpses) c.draw(ctx, cam.x, cam.y);
-                    player.draw(ctx, cam.x, cam.y); for (let e of enemies) e.draw(ctx, cam.x, cam.y); for (let b of
-                        bullets) b.draw(ctx, cam.x, cam.y); for (let p of parts) p.draw(ctx, cam.x, cam.y); if (
-                        player.hp < 50) { ctx.fillStyle = `rgba(0,0,0,${0.6*(1-player.hp/50)})`;
-                        ctx.fillRect(0, 0, VW, VH); } if (redScreen > 0) { ctx.fillStyle =
-                        `rgba(255,0,0,${redScreen*0.3})`;
-                        ctx.fillRect(0, 0, VW, VH); } if (healFlash > 0) { let a = Math.min(1, healFlash * 2);
-                        ctx.fillStyle = `rgba(255,255,255,${a*0.4})`;
-                        ctx.fillRect(0, 0, VW, VH);
-                        ctx.save();
-                        ctx.font = 'bold 64px monospace';
-                        ctx.textAlign = 'center';
-                        ctx.fillStyle = '#fff';
-                        ctx.shadowColor = '#ffa';
-                        ctx.shadowBlur = 20; let sx = (Math.random() - 0.5) * 8,
-                            sy = (Math.random() - 0.5) * 8;
-                        ctx.fillText('Р̶А̶Й̶ П̶0̶М̶0̶Г̶4̶3̶Т̶ Т̶3̶Б̶3̶', VW / 2 + sx, VH / 2 + sy);
-                        ctx.restore(); } if (bossAppearTimer > 0) { let alpha = Math.min(1, bossAppearTimer /
-                            1.5);
-                        ctx.fillStyle = `rgba(255,0,0,${alpha*0.2})`;
-                        ctx.fillRect(0, 0, VW, VH);
-                        ctx.fillStyle = '#fff';
-                        ctx.font = 'bold 48px monospace';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('ОН ПРИШЁЛ СУДИТЬ', VW / 2 + (Math.random() - 0.5) * 6, VH / 2 + (Math.random() -
-                            0.5) * 6); }
-                    drawHUD(); if (paused) { pauseBtns = drawPause(); } if (layoutW > 0) { ctx.fillStyle = '#ff0';
-                        ctx.font = '18px monospace';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('Бро, поменяй раскладку, лучше будет', VW / 2, VH - 50); } if (!paused && player
-                        .hp <= 0) { player.hp = 0;
-                        gameScore = player.madPts; if (player.casings > 0) player.diedByCasings = true;
-                        unlockAch('forgot');
-                        upHi();
-                        state = STATE.DEAD; } } else if (state === STATE.DEAD) { drawArena(); for (let s of blood)
-                s.draw(ctx, cam.x, cam.y);
-                    player.draw(ctx, cam.x, cam.y); for (let e of enemies) e.draw(ctx, cam.x, cam.y); for (let b of
-                        bullets) b.draw(ctx, cam.x, cam.y); for (let p of parts) p.draw(ctx, cam.x, cam.y);
-                    deathBtns = drawDeath(); } if (adState) { ctx.save();
+                        ctx.fillText('Бро, поменяй раскладку, лучше будет', VW / 2, VH - 50); } } else if (state === STATE.PLAY) { if (!paused && !perkChoice) { if (!waveActive) { wavePause -= dt; if (wavePause <= 0) { spawnWave();
+                        wavePause = 0; if (player.hp < 50) { player.hp = Math.min(player.maxHp, player.hp + 100);
+                            healFlash = 2.0;
+                            angelSnd();
+                            player.styleTxt = 'РАЙ П0М0Г437 73Б3';
+                            player.styleT = 2;
+                            player.angelHealStreak++; if (player.angelHealStreak >= 13) unlockAch('parasite'); } else { player.angelHealStreak = 0; } } } else { let ae = enemies.filter(e => e.alive); if (ae.length === 0 && waveLeft <= 0) { waveActive = false;
+                        waveNum++;
+                        wavePause = WAVE_PAUSE;
+                        enemies = [];
+                        bullets = []; if (waveNum >= 10) unlockAch('wave10'); if (waveNum >= 30) unlockAch('tsunami');
+                        // Проверка на выбор перка каждые 5 волн
+                        if (waveNum % 5 === 0 && waveNum > 0) {
+                            showPerkChoice();
+                        } } }
+                    player.up(dt, wW, wH, bullets, parts, blood, obstacles, thrown, fires, corpses); for (let e of enemies) e.up(dt, player, bullets, parts, wW, wH, obstacles); for (let b of bullets) b.up(dt, wW, wH); for (let p of parts) p.up(dt); for (let s of blood) s.up(dt); for (let o of organs) o.up(dt); for (let t of thrown) t.up(dt, wW, wH); for (let obj of thrownObjects) obj.up(dt, wW, wH); for (let f of fires) f.up(dt);
+                    blood = blood.filter(s => s.life > 0);
+                    organs = organs.filter(o => o.life > 0);
+                    thrown = thrown.filter(t => t.alive);
+                    thrownObjects = thrownObjects.filter(obj => obj.alive);
+                    fires = fires.filter(f => f.life > 0); for (let e of enemies) { if (!e.alive && e.type !== 'boss' && e.type !== 'turret' && !e._corpseCreated) { corpses.push(new Corpse(e.x, e.y, e.type));
+                            e._corpseCreated = true; } }
+                    checkColl();
+                    enemies = enemies.filter(e => e.alive);
+                    bullets = bullets.filter(b => b.alive);
+                    parts = parts.filter(p => p.alive);
+                    waveLeft = enemies.filter(e => e.alive).length; }
+                upCam(player.x, player.y, wW, wH, dt);
+                drawArena(); for (let o of obstacles) { ctx.fillStyle = o.color;
+                    ctx.fillRect(o.x - cam.x, o.y - cam.y, o.w, o.h);
+                    ctx.strokeStyle = '#000';
+                    ctx.strokeRect(o.x - cam.x, o.y - cam.y, o.w, o.h); } for (let f of fires) f.draw(ctx, cam.x, cam.y); for (let s of blood) s.draw(ctx, cam.x, cam.y); for (let o of organs) o.draw(ctx, cam.x, cam.y); for (let t of thrown) t.draw(ctx, cam.x, cam.y); for (let obj of thrownObjects) obj.draw(ctx, cam.x, cam.y);
+                for (let c of corpses) c.draw(ctx, cam.x, cam.y);
+                player.draw(ctx, cam.x, cam.y); for (let e of enemies) e.draw(ctx, cam.x, cam.y); for (let b of bullets) b.draw(ctx, cam.x, cam.y); for (let p of parts) p.draw(ctx, cam.x, cam.y); if (player.hp < 50) { ctx.fillStyle = `rgba(0,0,0,${0.6*(1-player.hp/50)})`;
+                    ctx.fillRect(0, 0, VW, VH); } if (redScreen > 0) { ctx.fillStyle = `rgba(255,0,0,${redScreen*0.3})`;
+                    ctx.fillRect(0, 0, VW, VH); } if (healFlash > 0) { let a = Math.min(1, healFlash * 2);
+                    ctx.fillStyle = `rgba(255,255,255,${a*0.4})`;
+                    ctx.fillRect(0, 0, VW, VH);
+                    ctx.save();
+                    ctx.font = 'bold 64px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = '#fff';
+                    ctx.shadowColor = '#ffa';
+                    ctx.shadowBlur = 20; let sx = (Math.random() - 0.5) * 8,
+                        sy = (Math.random() - 0.5) * 8;
+                    ctx.fillText('Р̶А̶Й̶ П̶0̶М̶0̶Г̶4̶3̶Т̶ Т̶3̶Б̶3̶', VW / 2 + sx, VH / 2 + sy);
+                    ctx.restore(); } if (bossAppearTimer > 0) { let alpha = Math.min(1, bossAppearTimer / 1.5);
+                    ctx.fillStyle = `rgba(255,0,0,${alpha*0.2})`;
+                    ctx.fillRect(0, 0, VW, VH);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 48px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('ОН ПРИШЁЛ СУДИТЬ', VW / 2 + (Math.random() - 0.5) * 6, VH / 2 + (Math.random() - 0.5) * 6); }
+                if (perkChoiceFlash > 0) {
+                    ctx.fillStyle = `rgba(255, 255, 100, ${perkChoiceFlash})`;
+                    ctx.fillRect(0, 0, VW, VH);
+                }
+                drawHUD();
+                if (perkChoice) drawPerkChoice();
+                if (paused && !perkChoice) { pauseBtns = drawPause(); } if (layoutW > 0) { ctx.fillStyle = '#ff0';
+                    ctx.font = '18px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Бро, поменяй раскладку, лучше будет', VW / 2, VH - 50); } if (!paused && !perkChoice && player.hp <= 0) { player.hp = 0;
+                    gameScore = player.madPts; if (player.casings > 0) player.diedByCasings = true;
+                    unlockAch('forgot');
+                    upHi();
+                    state = STATE.DEAD; } } else if (state === STATE.DEAD) { drawArena(); for (let s of blood) s.draw(ctx, cam.x, cam.y);
+                player.draw(ctx, cam.x, cam.y); for (let e of enemies) e.draw(ctx, cam.x, cam.y); for (let b of bullets) b.draw(ctx, cam.x, cam.y); for (let p of parts) p.draw(ctx, cam.x, cam.y);
+                deathBtns = drawDeath(); }
+                // Отрисовка фраз героя
+                let now = performance.now() / 1000;
+                for (let phrase of activeHeroPhrases) {
+                    drawShakingText(ctx, phrase.text, phrase.x, phrase.y, now);
+                }
+                if (adState) { ctx.save();
                     ctx.globalAlpha = adState.alpha; let px = adState.x,
                         py = adState.y;
                     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -1741,15 +1654,11 @@
                     ctx.fillRect(px, py, 320, 180);
                     ctx.strokeStyle = '#fff';
                     ctx.lineWidth = 2;
-                    ctx.strokeRect(px, py, 320, 180); if (adState.img && adState.img.complete) ctx.drawImage(adState
-                        .img, px + 10, py + 10, 140, 140);
+                    ctx.strokeRect(px, py, 320, 180); if (adState.img && adState.img.complete) ctx.drawImage(adState.img, px + 10, py + 10, 140, 140);
                     ctx.fillStyle = '#ff0';
-                    ctx.font = 'bold 16px monospace'; let text = adState.type === 'up' ?
-                        'Вауу, маладес скибиди сигма, продолжай в том же духе, да' :
-                        'я знаю где живут твои родители'; let words = text.split(' '),
+                    ctx.font = 'bold 16px monospace'; let text = adState.type === 'up' ? 'Вауу, маладес скибиди сигма, продолжай в том же духе, да' : 'я знаю где живут твои родители'; let words = text.split(' '),
                         line = '',
-                        yOff = py + 30; for (let w of words) { let test = line + w + ' '; if (ctx.measureText(test)
-                            .width > 150 && line !== '') { ctx.fillText(line, px + 160, yOff);
+                        yOff = py + 30; for (let w of words) { let test = line + w + ' '; if (ctx.measureText(test).width > 150 && line !== '') { ctx.fillText(line, px + 160, yOff);
                             yOff += 24;
                             line = w + ' '; } else line = test; }
                     ctx.fillText(line, px + 160, yOff);
